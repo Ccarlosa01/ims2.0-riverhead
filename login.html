@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Login | Warehouse Pallet Manager</title>
+
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: #f4f6f8;
+      margin: 0;
+      padding: 0;
+    }
+
+    .container {
+      max-width: 420px;
+      margin: 70px auto;
+      background: white;
+      padding: 30px;
+      border-radius: 14px;
+      box-shadow: 0 8px 24px rgba(0,0,0,0.08);
+    }
+
+    h1, p {
+      text-align: center;
+    }
+
+    p {
+      color: #555;
+      margin-bottom: 25px;
+    }
+
+    label {
+      display: block;
+      font-weight: bold;
+      margin-top: 15px;
+    }
+
+    input {
+      width: 100%;
+      padding: 12px;
+      margin-top: 6px;
+      border: 1px solid #ccc;
+      border-radius: 8px;
+      font-size: 15px;
+      box-sizing: border-box;
+    }
+
+    button {
+      width: 100%;
+      margin-top: 25px;
+      padding: 13px;
+      border: none;
+      border-radius: 8px;
+      background: #1f5eff;
+      color: white;
+      font-size: 16px;
+      font-weight: bold;
+      cursor: pointer;
+    }
+
+    button:disabled {
+      background: #999;
+    }
+
+    .message {
+      margin-top: 18px;
+      text-align: center;
+      font-weight: bold;
+    }
+
+    .error {
+      color: red;
+    }
+
+    .secondary-btn {
+      width: 100%;
+      margin-top: 10px;
+      padding: 13px;
+      border: none;
+      border-radius: 8px;
+      background: #e9eefc;
+      color: #1f5eff;
+      font-size: 16px;
+      font-weight: bold;
+      cursor: pointer;
+    }
+  </style>
+</head>
+
+<body>
+  <div class="container">
+    <h1>Login</h1>
+    <p>Warehouse Pallet Manager</p>
+
+    <form id="loginForm">
+      <label for="username">Username</label>
+      <input type="text" id="username" required />
+
+      <label for="password">Password</label>
+      <input type="password" id="password" required />
+
+      <button type="submit" id="loginBtn">Login</button>
+      <button type="button" class="secondary-btn" onclick="goHome()">Home</button>
+
+      <div id="message" class="message"></div>
+    </form>
+  </div>
+
+  <script>
+    const SCRIPT_URL = "https://script.google.com/macros/s/AKfycby2U12V_Kqt5pzNROlsqLeSGU6XoSSW2rg2pHl838BjB7NiYgu5W3pwPzFABOZhDUhK/exec";
+
+    const form = document.getElementById("loginForm");
+    const message = document.getElementById("message");
+    const loginBtn = document.getElementById("loginBtn");
+
+    form.addEventListener("submit", async function(e) {
+      e.preventDefault();
+
+      message.textContent = "";
+      message.className = "message";
+      loginBtn.disabled = true;
+      loginBtn.textContent = "Logging in...";
+
+      const username = document.getElementById("username").value.trim();
+      const password = document.getElementById("password").value.trim();
+
+      try {
+        const url = `${SCRIPT_URL}?action=login&username=${encodeURIComponent(username)}&password=${encodeURIComponent(password)}`;
+
+        const response = await fetch(url);
+        const result = await response.json();
+
+        if (!result.success) {
+          message.textContent = result.message;
+          message.classList.add("error");
+          loginBtn.disabled = false;
+          loginBtn.textContent = "Login";
+          return;
+        }
+
+        localStorage.setItem("warehouseUser", JSON.stringify(result.user));
+
+        if (result.user.role === "Manager") {
+          window.location.href = "employee.html";
+        } else {
+          window.location.href = "employee.html";
+        }
+
+      } catch (error) {
+        message.textContent = "Login failed. Please try again.";
+        message.classList.add("error");
+      }
+
+      loginBtn.disabled = false;
+      loginBtn.textContent = "Login";
+    });
+
+    function goHome() {
+      window.location.href = "index.html";
+    }
+  </script>
+</body>
+</html>
