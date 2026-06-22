@@ -1,0 +1,189 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Create User | Warehouse Pallet Manager</title>
+
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: #f4f6f8;
+      margin: 0;
+      padding: 0;
+    }
+
+    .container {
+      max-width: 420px;
+      margin: 60px auto;
+      background: white;
+      padding: 30px;
+      border-radius: 14px;
+      box-shadow: 0 8px 24px rgba(0,0,0,0.08);
+    }
+
+    h1 {
+      text-align: center;
+      margin-bottom: 10px;
+    }
+
+    p {
+      text-align: center;
+      color: #555;
+      margin-bottom: 25px;
+    }
+
+    label {
+      display: block;
+      font-weight: bold;
+      margin-top: 15px;
+    }
+
+    input, select {
+      width: 100%;
+      padding: 12px;
+      margin-top: 6px;
+      border: 1px solid #ccc;
+      border-radius: 8px;
+      font-size: 15px;
+      box-sizing: border-box;
+    }
+
+    button {
+      width: 100%;
+      margin-top: 25px;
+      padding: 13px;
+      border: none;
+      border-radius: 8px;
+      background: #1f5eff;
+      color: white;
+      font-size: 16px;
+      font-weight: bold;
+      cursor: pointer;
+    }
+
+    button:hover {
+      background: #164bd1;
+    }
+
+    button:disabled {
+      background: #999;
+      cursor: not-allowed;
+    }
+
+    .message {
+      margin-top: 18px;
+      text-align: center;
+      font-weight: bold;
+    }
+
+    .success {
+      color: green;
+    }
+
+    .error {
+      color: red;
+    }
+
+    .secondary-btn {
+      width: 100%;
+      margin-top: 10px;
+      padding: 13px;
+      border: none;
+      border-radius: 8px;
+      background: #e9eefc;
+      color: #1f5eff;
+      font-size: 16px;
+      font-weight: bold;
+      cursor: pointer;
+    }
+    
+    .secondary-btn:hover {
+      background: #dbe5ff;
+    }
+  </style>
+</head>
+
+<body>
+  <div class="container">
+    <h1>Create User</h1>
+    <p>Warehouse Pallet Manager</p>
+
+    <form id="userForm">
+      <label for="name">Name</label>
+      <input type="text" id="name" required />
+
+      <label for="role">Role</label>
+      <select id="role" required>
+        <option value="Employee">Employee</option>
+        <option value="Manager">Manager</option>
+      </select>
+
+      <label for="username">Username</label>
+      <input type="text" id="username" required />
+
+      <label for="password">Password</label>
+      <input type="password" id="password" required />
+
+      <button type="submit" id="submitBtn">Create User</button>
+      <button type="button" class="secondary-btn" onclick="goHome()">Home</button>
+
+      <div id="message" class="message"></div>
+    </form>
+  </div>
+
+  <script>
+    const SCRIPT_URL = "https://script.google.com/macros/s/AKfycby2U12V_Kqt5pzNROlsqLeSGU6XoSSW2rg2pHl838BjB7NiYgu5W3pwPzFABOZhDUhK/exec";
+
+    const form = document.getElementById("userForm");
+    const message = document.getElementById("message");
+    const submitBtn = document.getElementById("submitBtn");
+
+    form.addEventListener("submit", async function(e) {
+      e.preventDefault();
+
+      message.textContent = "";
+      message.className = "message";
+      submitBtn.disabled = true;
+      submitBtn.textContent = "Creating...";
+
+      const userData = {
+        name: document.getElementById("name").value.trim(),
+        role: document.getElementById("role").value,
+        username: document.getElementById("username").value.trim(),
+        password: document.getElementById("password").value.trim()
+      };
+
+      try {
+        const response = await fetch(SCRIPT_URL, {
+          method: "POST",
+          body: JSON.stringify(userData)
+        });
+
+        const result = await response.json();
+
+        if (result.success) {
+          message.textContent = result.message;
+          message.classList.add("success");
+          form.reset();
+        } else {
+          message.textContent = result.message;
+          message.classList.add("error");
+        }
+
+      } catch (error) {
+        message.textContent = "Something went wrong. Please try again.";
+        message.classList.add("error");
+      }
+
+      submitBtn.disabled = false;
+      submitBtn.textContent = "Create User";
+    });
+
+    function goHome() {
+      window.location.href = "index.html";
+    }
+        
+  </script>
+</body>
+</html>
