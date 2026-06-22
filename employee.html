@@ -1,0 +1,5604 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Warehouse Pallet Manager</title>
+
+  <style>
+    body { font-family: Arial, sans-serif; background:#f4f6f8; margin:0; color:#222; }
+    header { background:#1f5eff; color:white; padding:18px 24px; display:flex; justify-content:space-between; align-items:center; }
+    header h1 { margin:0; font-size:22px; }
+    .logout { background:white; color:#1f5eff; border:0; padding:9px 14px; border-radius:7px; font-weight:bold; cursor:pointer; }
+    .container { max-width:1250px; margin:30px auto; padding:0 20px; }
+    .card { background:white; padding:24px; border-radius:14px; box-shadow:0 8px 24px rgba(0,0,0,.08); margin-bottom:24px; }
+    h2 { margin-top:0; }
+    label { display:block; font-weight:bold; margin-top:12px; }
+    input, select { width:100%; padding:11px; margin-top:6px; border:1px solid #ccc; border-radius:8px; box-sizing:border-box; }
+    button { border:0; border-radius:8px; padding:11px 15px; font-weight:bold; cursor:pointer; margin-top:14px; }
+    .primary { background:#1f5eff; color:white; }
+    .secondary { background:#e9eefc; color:#1f5eff; }
+    .danger { background:#ffe5e5; color:#b00020; }
+    .row { display:grid; grid-template-columns:1fr 1fr; gap:16px; align-items:end; }
+    table { width:100%; border-collapse:collapse; margin-top:18px; }
+    th, td { border-bottom:1px solid #ddd; padding:9px; text-align:left; font-size:14px; vertical-align:top; }
+    th { background:#f4f6f8; }
+    td input { margin:0; padding:8px; }
+    .suggestions { border:1px solid #ccc; border-radius:8px; background:white; max-height:220px; overflow:auto; display:none; position:absolute; z-index:10; width:100%; }
+    .suggestion-item { padding:10px; cursor:pointer; border-bottom:1px solid #eee; }
+    .suggestion-item:hover { background:#f0f4ff; }
+    .search-wrap { position:relative; }
+    .message { margin-top:14px; font-weight:bold; }
+    .success { color:green; }
+    .error { color:red; }
+    .muted { color:#666; font-size:14px; }
+    .tabs { display:flex; gap:10px; flex-wrap:wrap; margin-bottom:20px; }
+    .tab-btn { background:#e9eefc; color:#1f5eff; }
+    .tab-btn.active { background:#1f5eff; color:white; }
+    .tab-section { display:none; }
+    .tab-section.active { display:block; }
+    .readonly-field { background:#f1f1f1; color:#555; cursor:not-allowed; }
+    .breakers-summary { margin-top:14px; padding:14px; border-radius:10px; background:#ffe5e5; color:#b00020; font-weight:bold; }
+    .order-search-wrap { position:relative; width:100%; }
+    .order-suggestions { position:absolute; top:100%; left:0; right:0; background:white; border:1px solid #ccc; border-radius:8px; max-height:220px; overflow-y:auto; display:none; z-index:9999; box-shadow:0 8px 18px rgba(0,0,0,0.12); }
+    .order-suggestion-item { padding:10px; cursor:pointer; border-bottom:1px solid #eee; }
+    .order-suggestion-item:hover { background:#f0f4ff; }
+
+    .preview-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 18px;
+    }
+    
+    .preview-header h2 {
+      margin: 0;
+    }
+    
+    .price-tag-layout {
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+    }
+
+    .price-editor-shell {
+      display: grid;
+      grid-template-columns: 160px 1fr 250px;
+      gap: 18px;
+      align-items: start;
+    }
+
+    .price-tag-list {
+      border: 1px solid #ddd;
+      border-radius: 10px;
+      overflow: hidden;
+    }
+
+    .price-tag-list button {
+      display: block;
+      width: 100%;
+      margin: 0;
+      border-radius: 0;
+      background: white;
+      color: #222;
+      text-align: left;
+      border-bottom: 1px solid #eee;
+    }
+
+    .price-tag-list button.active {
+      background: #1f5eff;
+      color: white;
+    }
+
+    .price-editor-main,
+    .price-editor-fonts {
+      border: 1px solid #ddd;
+      border-radius: 12px;
+      padding: 16px;
+      background: #fafafa;
+    }
+    
+    .price-editor-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 14px;
+    }
+    
+    .price-editor-grid > div:nth-child(1),
+    .price-editor-grid > div:nth-child(7),
+    .price-editor-grid > div:nth-child(8),
+    .price-editor-grid > div:nth-child(9) {
+      grid-column: span 2;
+    }
+
+    .price-editor-color-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+      grid-column: span 2;
+    }
+    
+    .price-editor-fonts input {
+      margin-bottom: 8px;
+    }
+
+    .price-editor-actions {
+      grid-column: 1 / -1;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-top: 14px;
+    }
+    
+    .price-tag-editor {
+      border: 1px solid #ddd;
+      border-radius: 12px;
+      padding: 16px;
+      margin-bottom: 18px;
+      background: #fafafa;
+    }
+    
+    .price-preview-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 7in);
+      grid-template-rows: repeat(2, 4.25in);
+      gap: 0;
+    }
+    
+    .price-preview-card {
+      width: 7in;
+      height: 4.25in;
+      border: none;
+      background: white;
+      box-sizing: border-box;
+      overflow: hidden;
+      position: relative;
+      display: grid;
+      grid-template-columns: 2.1in 4.9in;
+    }
+    
+    .price-preview-image {
+      background: #f1f1f1;
+      overflow: hidden;
+      position: relative;
+    }
+    
+    .price-preview-image img {
+      position: absolute;
+      left: 50%;
+      top: 50%;
+      max-width: 100%;
+      max-height: 100%;
+      object-fit: contain;
+      transform-origin: center center;
+    }
+
+      
+    .price-preview-info h3 {
+      margin: 0;
+    }
+
+    .price-preview-info {
+      position: relative;
+      padding: 10px 14px;
+    }
+
+    .price-preview-name { 
+      font-family: Arial, sans-serif;
+      font-weight: bold;
+    },
+    .price-preview-type { 
+      font-family: Arial, sans-serif; 
+      font-weight: 700;
+    },
+    .price-preview-size {
+      font-family: Arial, sans-serif;
+      text-align: left;
+      line-height: 1.1;
+      font-weight: 700;
+    }
+    
+    .price-preview-price {
+      font-family: Impact, Haettenschweiler, 'Arial Narrow Bold', sans-serif;
+      margin-top: 18px;
+      font-weight: bold;
+      
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+    
+      min-height: 1.6in;
+    }
+    
+    .price-preview-qr {
+      position: absolute;
+      right: 14px;
+      bottom: 38px;
+      width: 0.65in;
+      height: 0.65in;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 11px;
+      text-align: center;
+    }
+    
+    .price-preview-slogan {
+      position: absolute;
+      left: 14px;
+      right: 1.05in;
+      bottom: 12px;
+      padding: 4px 8px;
+      font-family: Arial, sans-serif;
+      font-weight: bold;
+    
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+    }
+    
+    .price-preview-itemno {
+      font-family: Arial, sans-serif;
+      position: absolute;
+      bottom: 12px;
+      right: 16px;
+      font-style: italic;
+      color: #333;
+    }
+
+    .price-preview-preset-image {
+      position: absolute;
+      left: 14px;
+      bottom: 52px;
+      width: 0.62in;
+      height: 0.48in;
+      object-fit: contain;
+    }
+
+    .price-preview-preset-image.no-slogan {
+      bottom: 16px;
+      width: 1.15in;
+      height: 0.82in;
+    }
+
+    .mini-spinner {
+      display: inline-block;
+      width: 13px;
+      height: 13px;
+      margin-right: 8px;
+      border: 2px solid #c7d4ff;
+      border-top: 2px solid #1f5eff;
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+      vertical-align: middle;
+    }
+    
+    @keyframes spin {
+      to {
+        transform: rotate(360deg);
+      }
+    }
+    
+    @media (max-width: 1100px) {
+      .price-editor-shell {
+        grid-template-columns: 1fr;
+      }
+    
+      .price-editor-grid {
+        grid-template-columns: 1fr 1fr;
+      }
+    }
+
+    .price-preview-box {
+      border: 2px solid #777;
+      padding: 4px 8px;
+      text-align: left;
+      line-height: 1.1;
+      font-weight: bold;
+    }
+
+    .price-preview-price-box {
+      border: 2px solid #777;
+      margin-top: 8px;
+      padding: 18px 8px;
+      text-align: left;
+      font-weight: bold;
+    }
+
+    .price-preview-bottom {
+      position: absolute;
+      bottom: 8px;
+      left: 8px;
+      right: 8px;
+      display: grid;
+      grid-template-columns: 1fr 0.8in;
+      gap: 6px;
+      align-items: end;
+    }
+
+    
+    .price-tag-search-wrap {
+      position: relative;
+    }
+    
+    .price-tag-suggestions {
+      position: absolute;
+      top: 100%;
+      left: 0;
+      right: 0;
+      background: white;
+      border: 1px solid #ccc;
+      border-radius: 8px;
+      max-height: 220px;
+      overflow-y: auto;
+      display: none;
+      z-index: 9999;
+      box-shadow: 0 8px 18px rgba(0,0,0,0.12);
+    }
+    
+    .price-tag-suggestion-item {
+      padding: 10px;
+      cursor: pointer;
+      border-bottom: 1px solid #eee;
+    }
+    
+    .price-tag-suggestion-item:hover {
+      background: #f0f4ff;
+    }
+
+    .print-sheet {
+      width: 14in;
+      height: 8.5in;
+      display: grid;
+      grid-template-columns: repeat(2, 7in);
+      grid-auto-rows: 4.25in;
+      justify-content: start;
+      align-content: start;
+    }
+
+    .price-preview-scale-wrap {
+      width: 100%;
+      overflow-x: auto;
+    }
+    
+    .price-preview-grid {
+      transform: scale(0.65);
+      transform-origin: top left;
+      width: 14in;
+      height: 8.5in;
+    }
+    
+    .price-preview-scale-wrap {
+      height: 5.6in;
+    }
+
+    .price-product-selectors {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 14px;
+      margin-top: 18px;
+    }
+    
+    .price-product-selector {
+      position: relative;
+    }
+    
+    .price-clickable {
+      cursor: pointer;
+      outline: 2px dashed transparent;
+    }
+    
+    .price-clickable:hover {
+      outline: 2px dashed #1f5eff;
+      outline-offset: 3px;
+    }
+    
+    .price-element-editor-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 14px;
+    }
+    
+    .price-preview-scale-wrap {
+      width: 100%;
+      overflow-x: auto;
+      height: 5.6in;
+    }
+    
+    .price-preview-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 7in);
+      grid-template-rows: repeat(2, 4.25in);
+      gap: 0;
+      transform: scale(0.65);
+      transform-origin: top left;
+      width: 14in;
+      height: 8.5in;
+    }
+    
+    .price-preview-card {
+      width: 7in;
+      height: 4.25in;
+      background: white;
+      box-sizing: border-box;
+      overflow: hidden;
+      position: relative;
+      display: grid;
+      grid-template-columns: 2.1in 4.9in;
+    }
+    
+    .price-preview-image {
+      background: #f1f1f1;
+      overflow: hidden;
+      position: relative;
+    }
+    
+    .price-preview-image img {
+      position: absolute;
+      left: 50%;
+      top: 50%;
+      max-width: 100%;
+      max-height: 100%;
+      object-fit: contain;
+      transform-origin: center center;
+    }
+    
+    .price-preview-info {
+      position: relative;
+      padding: 10px 14px;
+      overflow: hidden;
+    }
+    
+    .price-preview-name { 
+      font-family: Arial, sans-serif;
+      font-weight: bold;
+    },
+    .price-preview-type { 
+      font-family: Arial, sans-serif; 
+      font-weight: 700;  
+    },
+    .price-preview-size {
+      font-family: Arial, sans-serif;
+      font-weight: 700;
+      text-align: left;
+      line-height: 1.1;
+    }
+    
+    .price-preview-price {
+      font-family: Impact, Haettenschweiler, 'Arial Narrow Bold', sans-serif;
+      margin-top: 18px;
+      font-weight: bold;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      min-height: 1.6in;
+    }
+    
+    .price-preview-qr {
+      position: absolute;
+      right: 14px;
+      bottom: 38px;
+      width: 0.65in;
+      height: 0.65in;
+    }
+    
+    .price-preview-slogan {
+      position: absolute;
+      left: 14px;
+      right: 1.05in;
+      bottom: 12px;
+      padding: 4px 8px;
+      font-family: Arial, sans-serif;
+      font-weight: bold;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+    }
+    
+    .price-preview-itemno {
+      font-family: Arial, sans-serif;
+      position: absolute;
+      bottom: 12px;
+      right: 16px;
+      font-style: italic;
+      color: #333;
+    }
+
+    .floating-price-editor {
+      position: fixed;
+      z-index: 99999;
+      width: 320px;
+      background: white;
+      border-radius: 14px;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.18);
+      padding: 16px;
+      border: 1px solid #ddd;
+    }
+    
+    .floating-editor-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 14px;
+    }
+    
+    .floating-price-editor input {
+      width: 100%;
+    }
+    
+    .floating-price-editor label {
+      margin-top: 10px;
+    }
+
+    .tasting-calendar {
+      display: grid;
+      grid-template-columns: repeat(7, 1fr);
+      gap: 6px;
+      margin-top: 18px;
+    }
+    
+    .tasting-day-header {
+      font-weight: bold;
+      background: #f4f6f8;
+      padding: 10px;
+      text-align: center;
+      border-radius: 8px;
+    }
+    
+    .tasting-day {
+      min-height: 110px;
+      border: 1px solid #ddd;
+      border-radius: 10px;
+      padding: 8px;
+      background: white;
+    }
+    
+    .tasting-day-number {
+      font-weight: bold;
+      margin-bottom: 6px;
+    }
+    
+    .tasting-event {
+      background: #e9eefc;
+      color: #1f5eff;
+      padding: 6px;
+      border-radius: 7px;
+      font-size: 12px;
+      margin-top: 5px;
+    }
+    
+    @media (max-width: 900px) {
+      .price-product-selectors,
+      .price-element-editor-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+    
+    @media print {
+      body * {
+        visibility: hidden;
+      }
+    
+      .print-root,
+      .print-root * {
+        visibility: visible;
+      }
+    
+      .print-root {
+        position: absolute;
+        left: 0;
+        top: 0;
+        width: 14in;
+        height: 8.5in;
+        margin: 0;
+        padding: 0;
+      }
+    
+      @page {
+        size: legal landscape;
+        margin: 0;
+      }
+    }
+
+    /* ===== Customer Order Totals Styling ===== */
+    .totals-box {
+      max-width: 420px;
+      margin-top: 10px;
+    }
+    
+    .total-line,
+    .grand-total-line {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 12px;
+      padding: 10px 0;
+      border-bottom: 1px solid #eee;
+      font-size: 16px;
+    }
+    
+    .checkbox-line input {
+      width: auto;
+      margin: 0;
+      transform: scale(1.15);
+    }
+    
+    .grand-total-line {
+      margin-top: 8px;
+      padding-top: 14px;
+      border-top: 2px solid #222;
+      border-bottom: none;
+      font-size: 20px;
+      font-weight: bold;
+    }
+
+    .loading-bar-wrap {
+      display: none;
+      margin-top: 10px;
+      font-size: 14px;
+      color: #555;
+    }
+    
+    .loading-bar {
+      height: 8px;
+      width: 100%;
+      background: linear-gradient(90deg, #1f5eff, #9bb7ff, #1f5eff);
+      background-size: 200% 100%;
+      border-radius: 999px;
+      animation: loadingMove 1.2s linear infinite;
+      margin-bottom: 6px;
+    }
+
+    .card-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 8px;
+    }
+    
+    .small-btn {
+      padding: 6px 12px;
+      font-size: 13px;
+      margin: 0;
+    }
+
+    .table-scroll {
+      width: 100%;
+      overflow-x: auto;
+      margin-top: 18px;
+      border: 1px solid #eee;
+      border-radius: 10px;
+    }
+    
+    .wide-table {
+      min-width: 1600px;
+      margin-top: 0;
+    }
+    
+    .wide-table th,
+    .wide-table td {
+      white-space: normal;
+    }
+    
+    @keyframes loadingMove {
+      from { background-position: 200% 0; }
+      to { background-position: -200% 0; }
+    }
+    
+    @media (max-width: 800px) {
+      .row { grid-template-columns:1fr; }
+      header { display:block; }
+      .logout { margin-top:10px; }
+    }
+  </style>
+</head>
+
+<body>
+<header>
+  <div>
+    <h1>Warehouse Pallet Manager</h1>
+    <div id="userInfo"></div>
+    <div id="maxPalletInfo" class="muted"></div>
+  </div>
+  <button class="logout" onclick="logout()">Logout</button>
+</header>
+
+<div class="container">
+
+  <div class="tabs">
+    <button class="tab-btn active" onclick="showTab('workbench', this)">Update Pallet</button>
+    <button class="tab-btn" onclick="showTab('catalog', this)">Catalog View</button>
+    <button class="tab-btn" onclick="showTab('clear', this)">Clear Pallets</button>
+    <button class="tab-btn" onclick="showTab('breakers', this)">Breakers</button>
+    <button class="tab-btn" onclick="showTab('customerOrder', this)">Customer Order</button>
+    <button class="tab-btn" onclick="showTab('priceTags', this)">Price Tags</button>
+    <button class="tab-btn" onclick="showTab('tastings', this)">Tastings</button>
+    
+    
+    <button class="tab-btn" onclick="showTab('inventoryEntry', this)">Inventory Entry</button>
+    <button class="tab-btn" onclick="showTab('recountEntry', this)">Recount Entry</button>
+    
+    <button id="inventoryUploadTabBtn" class="tab-btn manager-only" onclick="showTab('inventoryUpload', this)" style="display:none;">
+      Inventory Upload
+    </button>
+
+    <button id="inventoryReportTabBtn" class="tab-btn manager-only" onclick="showTab('inventoryReport', this)" style="display:none;">
+      Inventory Report
+    </button>
+
+    <button id="recountReportTabBtn" class="tab-btn manager-only" onclick="showTab('recountReport', this)" style="display:none;">
+      Recount Report
+    </button>
+    
+  </div>
+
+  <div id="workbench" class="tab-section active">
+
+    <div class="card">
+      <h2>Select Pallet</h2>
+
+      <div class="row">
+        <div>
+          <label for="palletNumber">Pallet Number</label>
+          <select id="palletNumber"></select>
+        </div>
+
+        <div>
+          <button class="primary" onclick="loadPallet()">Load Pallet</button>
+          <button class="danger" onclick="clearCurrentPallet()">Clear Current Pallet</button>
+        </div>
+      </div>
+
+      <div id="loadMessage" class="message"></div>
+    </div>
+
+    <div class="card">
+      <h2>Add Product Line</h2>
+
+      <div class="search-wrap">
+        <label for="productSearch">Search Product by Description or Item No.</label>
+        <input id="productSearch" placeholder="Start typing product name or item number..." autocomplete="off" />
+        <div id="suggestions" class="suggestions"></div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>Current Pallet Batch</h2>
+
+      <table>
+        <thead>
+          <tr>
+            <th>Item No.</th>
+            <th>Description</th>
+            <th>BPC</th>
+            <th>Cases</th>
+            <th>Loose Bottles</th>
+            <th>Total Bottles</th>
+            <th>Notes</th>
+            <th>Action</th>
+          </tr>
+        </thead>
+        <tbody id="batchBody">
+          <tr><td colspan="8">Load a pallet or add products to begin.</td></tr>
+        </tbody>
+      </table>
+
+      <button class="primary" onclick="submitBatch()">Submit Full Pallet Batch</button>
+      <div id="saveMessage" class="message"></div>
+    </div>
+
+  </div>
+
+  <div id="catalog" class="tab-section">
+    <div class="card">
+      <h2>Warehouse Pallet Catalog</h2>
+      <p class="muted">View what is on pallets, search products, filter by pallet, and view totals.</p>
+
+      <button class="secondary" onclick="loadAllPallets()">Refresh Catalog</button>
+      <div id="catalogLoadingBar" class="loading-bar-wrap">
+        <div class="loading-bar"></div>
+        <span>Retrieving Pallet Catalog...</span>
+      </div>
+
+      <div class="row">
+        <div>
+          <label for="catalogSearch">Search Product / Item No. / Notes</label>
+          <input id="catalogSearch" placeholder="Search anything on pallets..." oninput="renderCatalog()" />
+        </div>
+
+        <div>
+          <label for="palletFilter">View Specific Pallet</label>
+          <select id="palletFilter" onchange="renderCatalog()">
+            <option value="">All Pallets</option>
+          </select>
+        </div>
+      </div>
+
+      <div id="totalsBox" class="message"></div>
+
+      <table>
+        <thead>
+          <tr>
+            <th>Pallet</th>
+            <th>Item No.</th>
+            <th>Description</th>
+            <th>BPC</th>
+            <th>Cases</th>
+            <th>Loose Bottles</th>
+            <th>Total Bottles</th>
+            <th>Notes</th>
+            <th>Last Updated By</th>
+            <th>Timestamp</th>
+          </tr>
+        </thead>
+        <tbody id="catalogBody">
+          <tr><td colspan="10">Click Refresh Catalog to view pallet inventory.</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+  </div>
+
+  <div id="clear" class="tab-section">
+
+    <div class="card">
+      <h2>Clear Multiple Pallets</h2>
+
+      <label for="clearPalletList">Enter pallet numbers separated by commas</label>
+      <input id="clearPalletList" placeholder="Example: 1, 4, 8, 12" />
+
+      <button class="danger" onclick="clearMultiplePallets()">Clear Selected Pallets</button>
+
+      <div id="clearMessage" class="message"></div>
+    </div>
+
+  </div>
+
+  <div id="breakers" class="tab-section">
+  
+    <div class="card">
+      <h2>Log Broken Product</h2>
+      <p class="muted">
+        Search by Item No. or Description. Cost, Sales Rep, and Vendor will autofill from Inventory.
+      </p>
+  
+      <div class="search-wrap">
+        <label for="breakerSearch">Search Product</label>
+        <input id="breakerSearch" placeholder="Start typing product name or item number..." autocomplete="off" />
+        <div id="breakerSuggestions" class="suggestions"></div>
+      </div>
+  
+      <div id="selectedBreakerProduct" class="message"></div>
+  
+      <div class="row">
+        <div>
+          <label for="breakerQty">Breaker</label>
+          <input type="number" id="breakerQty" min="0" value="0" oninput="calculateBreakerTotals()" />
+        </div>
+  
+        <div>
+          <label for="spoiledQty">Spoiled</label>
+          <input type="number" id="spoiledQty" min="0" value="0" oninput="calculateBreakerTotals()" />
+        </div>
+      </div>
+  
+      <div class="row">
+        <div>
+          <label for="damagedLabelQty">Damaged Label</label>
+          <input type="number" id="damagedLabelQty" min="0" value="0" oninput="calculateBreakerTotals()" />
+        </div>
+  
+        <div>
+          <label for="breakerQuantity">Quantity</label>
+          <input type="number" id="breakerQuantity" readonly class="readonly-field" />
+        </div>
+      </div>
+  
+      <div class="row">
+        <div>
+          <label for="costEa">Cost / EA</label>
+          <input type="number" id="costEa" readonly class="readonly-field" />
+        </div>
+  
+        <div>
+          <label for="totalCost">Total Cost</label>
+          <input type="number" id="totalCost" readonly class="readonly-field" />
+        </div>
+      </div>
+  
+      <div class="row">
+        <div>
+          <label for="breakerSalesRep">Sales Rep</label>
+          <input id="breakerSalesRep" readonly class="readonly-field" />
+        </div>
+  
+        <div>
+          <label for="breakerVendor">Vendor</label>
+          <input id="breakerVendor" readonly class="readonly-field" />
+        </div>
+      </div>
+  
+      <button class="primary" onclick="saveBreakerEntry()">Submit Breaker Entry</button>
+  
+      <div id="breakerMessage" class="message"></div>
+
+      <hr style="margin:24px 0; border:0; border-top:1px solid #ddd;">
+
+      <h2>Logged Broken Products</h2>
+      <div id="breakersSummary" class="breakers-summary">Total Broken Products: 0 | Total Cost: $0.00</div>
+
+      <div class="row">
+        <div>
+          <label for="breakerVendorFilter">Filter by Vendor</label>
+          <select id="breakerVendorFilter" onchange="renderBreakersTable()">
+            <option value="">All Vendors</option>
+          </select>
+        </div>
+
+        <div>
+          <label for="breakerRepFilter">Filter by Sales Rep</label>
+          <select id="breakerRepFilter" onchange="renderBreakersTable()">
+            <option value="">All Sales Reps</option>
+          </select>
+        </div>
+      </div>
+      
+      <button class="secondary" onclick="loadBreakers()">Refresh Breakers Log</button>
+      <button class="primary" onclick="downloadBreakersExcel()">Download to Excel</button>
+      
+      <table>
+        <thead>
+          <tr>
+            <th>Item No.</th>
+            <th>Description</th>
+            <th>Breaker</th>
+            <th>Spoiled</th>
+            <th>Damaged Label</th>
+            <th>Quantity</th>
+            <th>Cost / EA</th>
+            <th>Total Cost</th>
+            <th>Sales Rep</th>
+            <th>Vendor</th>
+            <th>Action</th>
+          </tr>
+        </thead>
+        <tbody id="breakersTableBody">
+          <tr><td colspan="11">No breaker entries loaded yet.</td></tr>
+        </tbody>
+      </table>
+    </div>
+  
+  </div>
+
+  <div id="customerOrder" class="tab-section">
+    <div class="card">
+      <div class="card-header">
+        <h2>Customer Order</h2>
+        <button class="danger small-btn" onclick="clearCustomerOrder()">Clear</button>
+      </div>
+  
+      <label>Name</label>
+      <div class="order-search-wrap">
+        <input 
+          id="customerName" 
+          placeholder="Search or enter name" 
+          autocomplete="off"
+          onfocus="showCustomerSuggestions(this.value)"
+          oninput="showCustomerSuggestions(this.value)"
+          onblur="handleCustomerBlur()"
+        />
+        <div id="customerSuggestions" class="order-suggestions"></div>
+      </div>
+
+      <div id="customerLoadingBar" class="loading-bar-wrap">
+        <div class="loading-bar"></div>
+        <span>Retrieving Customers...</span>
+      </div>
+      <datalist id="customerNameList"></datalist>
+  
+      <label>Previous Ordered On</label>
+      <input id="prevOrder" class="readonly-field" readonly />
+  
+      <label>Phone Number</label>
+      <input id="phone" />
+  
+      <label>Address</label>
+      <input id="address" />
+  
+      <label>Apartment</label>
+      <input id="apartment" />
+  
+      <label>Zip Code</label>
+      <input id="zip" />
+  
+      <label>Credit Card No.</label>
+      <input id="paymentMethod" />
+  
+      <label>Exp. Date | Save in this Format: Month//Year</label>
+      <input id="cardLast4" />
+  
+      <label>CVV</label>
+      <input id="paymentStatus" />
+  
+      <label>Special Instructions</label>
+      <input id="instructions" />
+    </div>
+  
+    <div class="card">
+      <h3>Order Items</h3>
+      <datalist id="inventoryDescriptions"></datalist>
+  
+      <table>
+        <thead>
+          <tr>
+            <th>Item No.</th>
+            <th>Description</th>
+            <th>Price</th>
+            <th>Quantity</th>
+            <th>Total</th>
+            <th>Action</th>
+          </tr>
+        </thead>
+        <tbody id="orderTable"></tbody>
+      </table>
+  
+      <button class="secondary" onclick="addOrderRow()">Add Product</button>
+    </div>
+  
+    <div class="card">
+      <h3>Totals</h3>
+    
+      <div class="totals-box">
+        <div class="total-line">
+          <span>Subtotal</span>
+          <strong>$<span id="subtotal">0.00</span></strong>
+        </div>
+    
+        <label class="total-line checkbox-line">
+          <span>Delivery ($10)</span>
+          <input type="checkbox" id="delivery" checked onchange="calculateOrderTotals()" />
+        </label>
+    
+        <div class="total-line">
+          <span>Tax</span>
+          <strong>$<span id="tax">0.00</span></strong>
+        </div>
+    
+        <label class="total-line checkbox-line">
+          <span>Tax Exempt</span>
+          <input type="checkbox" id="taxExempt" onchange="calculateOrderTotals()" />
+        </label>
+    
+        <div class="total-line">
+          <span>Tax Exempt Amount</span>
+          <strong>$<span id="taxExemptAmount">0.00</span></strong>
+        </div>
+    
+        <div class="grand-total-line">
+          <span>Total</span>
+          <strong>$<span id="grandTotal">0.00</span></strong>
+        </div>
+      </div>
+    
+      <button class="primary" onclick="saveCustomerOrder()">Submit Order</button>
+      <button class="secondary" onclick="printCustomerOrder()">Print Order</button>
+      <div id="orderMessage" class="message"></div>
+    </div>
+  
+  </div>
+
+  <div id="inventoryEntry" class="tab-section">
+    <div class="card">
+      <h2>Inventory Entry</h2>
+      <p class="muted">
+        Scan a product barcode to pull the Item No. If no barcode match exists, enter the Item No. manually.
+      </p>
+  
+      <button class="secondary" onclick="startInventoryScanner()">Scan Barcode</button>
+  
+      <div id="inventoryScannerBox" class="card" style="display:none; margin-top:15px;">
+        <h3>Scan Barcode</h3>
+        <video id="inventoryScannerPreview" style="width:100%; max-width:420px; border-radius:10px;"></video>
+        <button class="danger" onclick="stopInventoryScanner()">Stop Scanner</button>
+        <div id="inventoryScannerMessage" class="message"></div>
+      </div>
+  
+      <label for="inventoryEntryItemNo">Item No.</label>
+      <input id="inventoryEntryItemNo" placeholder="Scan barcode or type item no." />
+  
+      <div id="inventoryEntryProductInfo" class="message"></div>
+  
+      <div class="row">
+        <div>
+          <label for="floorCount">Floor</label>
+          <input type="number" id="floorCount" min="0" value="0" />
+        </div>
+  
+        <div>
+          <label for="steelCount">Steel</label>
+          <input type="number" id="steelCount" min="0" value="0" />
+        </div>
+      </div>
+  
+      <label for="behindSteelCount">Behind Steel</label>
+      <input type="number" id="behindSteelCount" min="0" value="0" />
+  
+      <button class="primary" onclick="submitInventoryEntry()">Submit Inventory Entry</button>
+      <button id="clearInventoryEntriesBtn" class="danger manager-only" onclick="clearInventoryEntries()" style="display:none;">
+        Clear All Entries
+      </button>
+  
+      <div id="inventoryEntryMessage" class="message"></div>
+    </div>
+  
+  </div>
+
+  <div id="recountEntry" class="tab-section">
+    <div class="card">
+      <h2>Recount Entry</h2>
+      <p class="muted">
+        Select an item from the recount list, then enter Qty On Hand, Floor, Steel, and Behind Steel.
+      </p>
+  
+      <button class="secondary" onclick="loadRecountItems()">Refresh Recount Items</button>
+  
+      <label for="recountItemSelect">Select Item</label>
+      <select id="recountItemSelect" onchange="selectRecountItem()">
+        <option value="">Load recount items first...</option>
+      </select>
+  
+      <div id="recountLastSavedInfo" class="message"></div>
+  
+      <label>Item No.</label>
+      <input id="recountItemNo" class="readonly-field" readonly />
+  
+      <label>Description</label>
+      <input id="recountDescription" class="readonly-field" readonly />
+  
+      <div class="row">
+        <div>
+          <label>Qty On Hand</label>
+          <input type="number" id="recountQtyOnHand" min="0" value="0" />
+        </div>
+  
+        <div>
+          <label>Floor</label>
+          <input type="number" id="recountFloor" min="0" value="0" />
+        </div>
+      </div>
+  
+      <div class="row">
+        <div>
+          <label>Steel</label>
+          <input type="number" id="recountSteel" min="0" value="0" />
+        </div>
+  
+        <div>
+          <label>Behind Steel</label>
+          <input type="number" id="recountBehindSteel" min="0" value="0" />
+        </div>
+      </div>
+  
+      <button class="primary" onclick="submitRecountEntry()">Submit Recount Entry</button>
+  
+      <div id="recountEntryMessage" class="message"></div>
+    </div>
+  
+  </div>
+  
+  <div id="inventoryUpload" class="tab-section">
+
+    <div class="card">
+      <h2>Inventory Upload</h2>
+      <p class="muted">
+        Manager-only tool. Upload an .xls, .xlsx, or .csv file with headers matching the Inventory tab.
+      </p>
+
+      <input type="file" id="inventoryFile" accept=".xls,.xlsx,.csv" />
+
+      <button class="primary" onclick="uploadInventoryFile()">Upload Inventory</button>
+
+      <div id="inventoryUploadMessage" class="message"></div>
+    </div>
+
+    <div class="card">
+      <h2>Barcode Upload</h2>
+      <p class="muted">
+        Manager-only tool. Upload a barcode .xlsx file with headers:
+        plu_number, Description, barcode, store.
+      </p>
+    
+      <input type="file" id="barcodeFile" accept=".xlsx,.xls,.csv" />
+    
+      <button class="primary" onclick="uploadBarcodeFile()">Upload Barcodes</button>
+    
+      <div id="barcodeUploadMessage" class="message"></div>
+    </div>
+
+    <div class="card">
+      <h2>Recount Inventory Upload</h2>
+      <p class="muted">
+        Manager-only tool. Upload a Recount Inventory .xlsx file with headers: Item No. and Description.
+      </p>
+    
+      <input type="file" id="recountInventoryFile" accept=".xlsx,.xls,.csv" />
+    
+      <button class="primary" onclick="uploadRecountInventoryFile()">Upload Recount Inventory</button>
+    
+      <div id="recountInventoryUploadMessage" class="message"></div>
+    </div>
+
+  </div>
+
+  <div id="inventoryReport" class="tab-section">
+    <div class="card">
+      <h2>Inventory Report</h2>
+      <p class="muted">
+        Manager-only report. This generates totals from Inventory, Pallets, Breakers, and Inventory Entry.
+      </p>
+  
+      <button class="primary" onclick="generateInventoryReport()">Generate Inventory Report</button>
+      <button class="secondary" onclick="downloadInventoryReportExcel()">Download Inventory Report Excel</button>
+      <button class="secondary" onclick="sortByCountVariance()">Sort by Count Variance</button>
+  
+      <div id="inventoryReportMessage" class="message"></div>
+  
+      <div class="table-scroll">
+        <table class="wide-table">
+          <thead id="inventoryReportHead"></thead>
+          <tbody id="inventoryReportBody">
+            <tr><td>No report generated yet.</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <div id="recountReport" class="tab-section">
+    <div class="card">
+      <h2>Recount Report</h2>
+      <p class="muted">
+        Manager-only report. This generates recount variance using Recount Inventory, Recount Entries, Pallets, and Breakers.
+      </p>
+  
+      <button class="primary" onclick="generateRecountReport()">Generate Recount Report</button>
+      <button class="secondary" onclick="downloadRecountReportExcel()">Download Recount Report Excel</button>
+  
+      <div id="recountReportMessage" class="message"></div>
+  
+      <div class="table-scroll">
+        <table class="wide-table">
+          <thead id="recountReportHead"></thead>
+          <tbody id="recountReportBody">
+            <tr><td>No report generated yet.</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <div id="priceTags" class="tab-section">
+    <div class="card">
+      <div class="preview-header">
+        <h2>Price Tag Designer</h2>
+        <button class="primary" onclick="printPriceTags()">Print Price Tags</button>
+      </div>
+  
+      <label for="priceTagCount">How many tags?</label>
+      <select id="priceTagCount" onchange="generateVisualPriceTags()">
+        <option value="1">1 Tag</option>
+        <option value="2">2 Tags</option>
+        <option value="3">3 Tags</option>
+        <option value="4">4 Tags</option>
+      </select>
+      
+      <p class="muted" style="margin-top:12px;">
+        Preset settings, if available, will auto-load after product is selected.
+      </p>
+
+      <div style="margin-top:14px; display:flex; gap:10px; flex-wrap:wrap;">     
+        <button id="saveTagSettingsBtn" class="primary" onclick="saveSelectedPriceTagSettings()">
+          <span id="saveTagSettingsSpinner" class="mini-spinner" style="display:none;"></span>
+          Save Current Tag Settings
+        </button>
+      </div>
+  
+      <div id="priceTagProductSelectors" class="price-product-selectors"></div>
+    </div>
+  
+    <div class="card">
+      <h2>Live Preview</h2>
+  
+      <div class="price-preview-scale-wrap">
+        <div id="priceTagPreview" class="price-preview-grid"></div>
+      </div>
+    </div>
+  
+    <div id="priceElementEditor" class="card" style="display:none;">
+      <div class="preview-header">
+        <h2 id="priceElementEditorTitle">Edit Element</h2>
+        <button class="danger small-btn" onclick="closePriceElementEditor()">Close</button>
+      </div>
+  
+      <div id="priceElementEditorBody"></div>
+    </div>
+  
+  </div>
+
+  <div id="floatingPriceEditor" class="floating-price-editor" style="display:none;">
+    <div class="floating-editor-header">
+      <strong id="floatingEditorTitle">Edit</strong>
+  
+      <button class="danger small-btn" onclick="closeFloatingPriceEditor()">
+        ✕
+      </button>
+    </div>
+  
+    <div id="floatingPriceEditorBody"></div>
+  </div>
+
+  <div id="tastings" class="tab-section">
+    <div class="card">
+      <h2>Book Tasting</h2>
+  
+      <div class="row">
+        <div>
+          <label>Date Reserved</label>
+          <input type="date" id="tastingDate" />
+        </div>
+  
+        <div>
+          <div class="row">
+            <div>
+              <label>From</label>
+              <select id="tastingTimeFrom"></select>
+            </div>
+          
+            <div>
+              <label>To</label>
+              <select id="tastingTimeTo"></select>
+            </div>
+          </div>
+        </div>
+      </div>
+  
+      <label>Product(s)</label>
+      <input id="tastingProducts" placeholder="Example: Jim Beam, Maker's Mark, Hornitos" />
+      
+      <label>Notes</label>
+      <input id="tastingNotes" placeholder="Optional notes..." />
+      
+      <label>Image URL (Optional)</label>
+      <input id="tastingImageUrl" placeholder="Include a Branded Image for Store Tasting Calendar" />
+      
+      <button class="primary" onclick="saveTasting()">Book Tasting</button>
+  
+      <div id="tastingMessage" class="message"></div>
+    </div>
+  
+    <div class="card">
+      <div class="preview-header">
+        <h2>Tasting Schedule</h2>
+  
+        <div>
+          <button class="secondary" onclick="showTastingListView()">List View</button>
+          <button class="secondary" onclick="showTastingCalendarView()">Calendar View</button>
+        </div>
+      </div>
+  
+      <div class="row">
+        <div>
+          <label>Month</label>
+          <select id="tastingMonth" onchange="renderTastings()"></select>
+        </div>
+  
+        <div>
+          <label>Year</label>
+          <input type="number" id="tastingYear" onchange="renderTastings()" />
+        </div>
+      </div>
+  
+      <button id="refreshTastingsBtn" class="secondary" onclick="loadTastings()">
+        <span id="refreshTastingsSpinner" class="mini-spinner" style="display:none;"></span>
+        Refresh Tastings
+      </button>
+
+      <button class="secondary" onclick="downloadTastingsCSV()">
+        Download CSV
+      </button>
+  
+      <div id="tastingListView">
+        <table>
+          <thead>
+            <tr>
+              <th>Date Reserved</th>
+              <th>Time Slot</th>
+              <th>Product(s)</th>
+              <th>Notes</th>
+              <th>Created By</th>
+              <th>Action</th>
+            </tr>
+          </thead>
+          <tbody id="tastingTableBody">
+            <tr><td colspan="6">No tastings loaded.</td></tr>
+          </tbody>
+        </table>
+      </div>
+  
+      <div id="tastingCalendarView" style="display:none;">
+        <div id="tastingCalendar" class="tasting-calendar"></div>
+      </div>
+    </div>
+  
+  </div>
+
+<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+<script src="https://unpkg.com/@zxing/library@latest"></script>
+<script src="https://cdn.jsdelivr.net/npm/exceljs/dist/exceljs.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.3/build/qrcode.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
+
+<script>
+const SCRIPT_URL = "https://script.google.com/macros/s/AKfycby2U12V_Kqt5pzNROlsqLeSGU6XoSSW2rg2pHl838BjB7NiYgu5W3pwPzFABOZhDUhK/exec";
+
+let currentUser = null;
+let inventory = [];
+let batchEntries = [];
+let allPalletData = [];
+let breakersData = [];
+let maxPallets = 0;
+let customersData = {};
+let orderItems = [];
+let barcodeData = [];
+let inventoryEntryScanner = null;
+let inventoryReportData = [];
+let priceTags = [];
+let selectedPriceTagIndex = 0;
+let selectedPriceElement = "";
+let priceTagSettings = {};
+let tastingsData = [];
+let tastingViewMode = "list";
+let recountItems = [];
+let selectedRecountItem = null;
+let recountReportData = [];
+
+window.onload = async function () {
+  const savedUser = localStorage.getItem("warehouseUser");
+
+  if (!savedUser) {
+    window.location.href = "login.html";
+    return;
+  }
+
+  currentUser = JSON.parse(savedUser);
+
+  if (currentUser.role !== "Employee" && currentUser.role !== "Manager") {
+    window.location.href = "login.html";
+    return;
+  }
+
+  if (currentUser.role === "Manager") {
+    document.getElementById("inventoryUploadTabBtn").style.display = "inline-block";
+  
+    const reportBtn = document.getElementById("inventoryReportTabBtn");
+    if (reportBtn) reportBtn.style.display = "inline-block";
+
+    const recountReportBtn = document.getElementById("recountReportTabBtn");
+    if (recountReportBtn) recountReportBtn.style.display = "inline-block";
+  
+    document.querySelectorAll(".manager-only").forEach(el => {
+      el.style.display = "inline-block";
+    });
+  }
+
+  document.getElementById("userInfo").textContent =
+    `Logged in as ${currentUser.name} | ${currentUser.role}`;
+
+  setupTastingMonthYear();
+  populateTastingTimeDropdowns();
+  await loadTastings();
+  await loadMaxPallets();
+  await loadInventory();
+  await loadBreakers();
+  await loadCustomers();
+  await loadBarcodes();
+  await loadPriceTagSettings();
+  await loadRecountItems();
+};
+
+function showTab(tabId, btn) {
+  if (tabId === "inventoryUpload" && currentUser.role !== "Manager") {
+    return;
+  }
+
+  if (tabId === "inventoryReport" && currentUser.role !== "Manager") {
+    return;
+  }
+
+  clearAllMessages();
+
+  document.querySelectorAll(".tab-section").forEach(section => {
+    section.classList.remove("active");
+  });
+
+  document.querySelectorAll(".tab-btn").forEach(button => {
+    button.classList.remove("active");
+  });
+
+  document.getElementById(tabId).classList.add("active");
+  btn.classList.add("active");
+
+  if (tabId === "catalog") {
+    loadAllPallets();
+  }
+
+  if (tabId === "breakers") {
+    loadBreakers();
+  }
+}
+
+function logout() {
+  localStorage.removeItem("warehouseUser");
+  window.location.href = "login.html";
+}
+
+async function loadMaxPallets() {
+  try {
+    const response = await fetch(`${SCRIPT_URL}?action=getMaxPallets`);
+    const result = await response.json();
+
+    if (result.success) {
+      maxPallets = Number(result.maxPallets);
+      document.getElementById("maxPalletInfo").textContent = `Pallet range: 1 through ${maxPallets}`;
+      populatePalletDropdowns();
+    } else {
+      showMessage("loadMessage", result.message, "error");
+    }
+  } catch {
+    showMessage("loadMessage", "Could not load maximum pallet count.", "error");
+  }
+}
+
+function populatePalletDropdowns() {
+  const palletSelect = document.getElementById("palletNumber");
+  const palletFilter = document.getElementById("palletFilter");
+
+  palletSelect.innerHTML = "";
+  palletFilter.innerHTML = `<option value="">All Pallets</option>`;
+
+  for (let i = 1; i <= maxPallets; i++) {
+    const option1 = document.createElement("option");
+    option1.value = String(i);
+    option1.textContent = `Pallet ${i}`;
+    palletSelect.appendChild(option1);
+
+    const option2 = document.createElement("option");
+    option2.value = String(i);
+    option2.textContent = `Pallet ${i}`;
+    palletFilter.appendChild(option2);
+  }
+}
+
+function isValidPalletNumber(palletNumber) {
+  const num = Number(palletNumber);
+  return Number.isInteger(num) && num >= 1 && num <= maxPallets;
+}
+
+async function loadInventory() {
+  try {
+    const response = await fetch(`${SCRIPT_URL}?action=getInventory`);
+    const result = await response.json();
+
+    if (result.success) {
+      inventory = result.inventory || [];
+      populateInventoryDatalist();
+    } else {
+      showMessage("loadMessage", result.message, "error");
+    }
+  } catch {
+    showMessage("loadMessage", "Could not load inventory.", "error");
+  }
+}
+
+async function loadPallet() {
+  const palletNumber = document.getElementById("palletNumber").value.trim();
+
+  if (!isValidPalletNumber(palletNumber)) {
+    showMessage("loadMessage", `Pallet must be between 1 and ${maxPallets}.`, "error");
+    return;
+  }
+
+  try {
+    showMessage("loadMessage", "Loading pallet...", "");
+
+    const response = await fetch(
+      `${SCRIPT_URL}?action=getPallet&palletNumber=${encodeURIComponent(palletNumber)}`
+    );
+
+    const result = await response.json();
+
+    if (result.success) {
+      batchEntries = result.palletItems || [];
+      renderBatchTable();
+
+      if (batchEntries.length) {
+        showMessage("loadMessage", `Loaded ${batchEntries.length} product line(s) from pallet ${palletNumber}.`, "success");
+      } else {
+        showMessage("loadMessage", `Pallet ${palletNumber} is empty. You can start adding products.`, "success");
+      }
+    } else {
+      showMessage("loadMessage", result.message, "error");
+    }
+  } catch {
+    showMessage("loadMessage", "Could not load pallet.", "error");
+  }
+}
+
+const searchInput = document.getElementById("productSearch");
+const suggestionsBox = document.getElementById("suggestions");
+
+searchInput.addEventListener("input", function () {
+  const query = this.value.toLowerCase().trim();
+  suggestionsBox.innerHTML = "";
+
+  if (!query) {
+    suggestionsBox.style.display = "none";
+    return;
+  }
+
+  const matches = inventory.filter(item =>
+    String(item.itemNo).toLowerCase().includes(query) ||
+    String(item.description).toLowerCase().includes(query)
+  ).slice(0, 20);
+
+  if (!matches.length) {
+    suggestionsBox.style.display = "none";
+    return;
+  }
+
+  matches.forEach(item => {
+    const div = document.createElement("div");
+    div.className = "suggestion-item";
+    div.textContent = `${item.itemNo} - ${item.description}`;
+    div.onclick = () => addProductToBatch(item);
+    suggestionsBox.appendChild(div);
+  });
+
+  suggestionsBox.style.display = "block";
+});
+
+function addProductToBatch(item) {
+  const alreadyExists = batchEntries.some(entry =>
+    String(entry.itemNo) === String(item.itemNo)
+  );
+
+  if (alreadyExists) {
+    showMessage("saveMessage", "This product is already on the batch table.", "error");
+    searchInput.value = "";
+    suggestionsBox.style.display = "none";
+    return;
+  }
+
+  batchEntries.push({
+    itemNo: item.itemNo,
+    description: item.description,
+    bpc: item.bpc || "",
+    cases: 0,
+    looseBottles: 0,
+    totalBottles: 0,
+    notes: ""
+  });
+
+  searchInput.value = "";
+  suggestionsBox.style.display = "none";
+  renderBatchTable();
+}
+
+function renderBatchTable() {
+  const tbody = document.getElementById("batchBody");
+  tbody.innerHTML = "";
+
+  if (!batchEntries.length) {
+    tbody.innerHTML = `<tr><td colspan="8">No products added to this pallet yet.</td></tr>`;
+    return;
+  }
+
+  batchEntries.forEach((entry, index) => {
+    const bpc = Number(entry.bpc || 0);
+    const cases = Number(entry.cases || 0);
+    const loose = Number(entry.looseBottles || 0);
+    entry.totalBottles = (bpc * cases) + loose;
+
+    const tr = document.createElement("tr");
+
+    tr.innerHTML = `
+      <td>${entry.itemNo}</td>
+      <td>${entry.description}</td>
+      <td><input type="number" min="0" value="${entry.bpc || ""}" onchange="updateEntry(${index}, 'bpc', this.value)" /></td>
+      <td><input type="number" min="0" value="${entry.cases || 0}" onchange="updateEntry(${index}, 'cases', this.value)" /></td>
+      <td><input type="number" min="0" value="${entry.looseBottles || 0}" onchange="updateEntry(${index}, 'looseBottles', this.value)" /></td>
+      <td>${entry.totalBottles}</td>
+      <td><input value="${entry.notes || ""}" onchange="updateEntry(${index}, 'notes', this.value)" /></td>
+      <td><button class="danger" onclick="removeEntry(${index})">Remove</button></td>
+    `;
+
+    tbody.appendChild(tr);
+  });
+}
+
+function updateEntry(index, field, value) {
+  if (["bpc", "cases", "looseBottles"].includes(field)) {
+    batchEntries[index][field] = Number(value || 0);
+  } else {
+    batchEntries[index][field] = value;
+  }
+
+  renderBatchTable();
+}
+
+function removeEntry(index) {
+  batchEntries.splice(index, 1);
+  renderBatchTable();
+}
+
+async function submitBatch() {
+  const palletNumber = document.getElementById("palletNumber").value.trim();
+
+  if (!isValidPalletNumber(palletNumber)) {
+    showMessage("saveMessage", `Pallet must be between 1 and ${maxPallets}.`, "error");
+    return;
+  }
+
+  if (!batchEntries.length) {
+    showMessage("saveMessage", "Add at least one product before submitting.", "error");
+    return;
+  }
+
+  for (const entry of batchEntries) {
+    if (!entry.bpc || Number(entry.bpc) <= 0) {
+      showMessage("saveMessage", `BPC is required for ${entry.description}.`, "error");
+      return;
+    }
+  }
+
+  try {
+    showMessage("saveMessage", "Submitting pallet batch...", "");
+
+    const response = await fetch(SCRIPT_URL, {
+      method: "POST",
+      body: JSON.stringify({
+        action: "savePalletBatch",
+        palletNumber,
+        entries: batchEntries,
+        employeeName: currentUser.name,
+        employeeUsername: currentUser.username
+      })
+    });
+
+    const result = await response.json();
+
+    if (result.success) {
+      batchEntries = [];
+      renderBatchTable();
+      showMessage("saveMessage", "Full pallet batch saved successfully. Table cleared.", "success");
+      await loadAllPallets();
+    } else {
+      showMessage("saveMessage", result.message, "error");
+    }
+  } catch {
+    showMessage("saveMessage", "Could not submit pallet batch.", "error");
+  }
+}
+
+async function loadAllPallets() {
+  const loader = document.getElementById("catalogLoadingBar");
+
+  try {
+    if (loader) loader.style.display = "block";
+
+    const response = await fetch(`${SCRIPT_URL}?action=getAllPallets`);
+    const result = await response.json();
+
+    if (result.success) {
+      allPalletData = result.pallets || [];
+      renderCatalog();
+    } else {
+      showMessage("totalsBox", result.message, "error");
+    }
+  } catch {
+    showMessage("totalsBox", "Could not load pallet catalog.", "error");
+  } finally {
+    if (loader) loader.style.display = "none";
+  }
+}
+
+function renderCatalog() {
+  const tbody = document.getElementById("catalogBody");
+  const totalsBox = document.getElementById("totalsBox");
+
+  const search = document.getElementById("catalogSearch").value.toLowerCase().trim();
+  const palletFilter = document.getElementById("palletFilter").value.trim();
+
+  const filtered = allPalletData.filter(row => {
+    const matchesSearch =
+      String(row.itemNo).toLowerCase().includes(search) ||
+      String(row.description).toLowerCase().includes(search) ||
+      String(row.notes || "").toLowerCase().includes(search);
+
+    const matchesPallet =
+      !palletFilter || String(row.palletNumber).trim() === palletFilter;
+
+    return matchesSearch && matchesPallet;
+  });
+
+  tbody.innerHTML = "";
+
+  if (!filtered.length) {
+    tbody.innerHTML = `<tr><td colspan="10">No matching pallet products found.</td></tr>`;
+    totalsBox.textContent = "No totals available.";
+    return;
+  }
+
+  let totalCases = 0;
+  let totalLooseBottles = 0;
+  let totalBottles = 0;
+  const uniquePallets = new Set();
+  const uniqueItems = new Set();
+
+  filtered.forEach(row => {
+    totalCases += Number(row.cases || 0);
+    totalLooseBottles += Number(row.looseBottles || 0);
+    totalBottles += Number(row.totalBottles || 0);
+    uniquePallets.add(String(row.palletNumber));
+    uniqueItems.add(String(row.itemNo));
+
+    const tr = document.createElement("tr");
+
+    tr.innerHTML = `
+      <td>${row.palletNumber}</td>
+      <td>${row.itemNo}</td>
+      <td>${row.description}</td>
+      <td>${row.bpc}</td>
+      <td>${row.cases}</td>
+      <td>${row.looseBottles}</td>
+      <td>${row.totalBottles}</td>
+      <td>${row.notes || ""}</td>
+      <td>${row.employeeName || ""}</td>
+      <td>${formatTimestampEST(row.timestamp)}</td>
+    `;
+
+    tbody.appendChild(tr);
+  });
+
+  totalsBox.textContent =
+    `Showing ${filtered.length} line(s) across ${uniquePallets.size} pallet(s). ` +
+    `Unique products: ${uniqueItems.size}. ` +
+    `Total cases: ${totalCases}. Loose bottles: ${totalLooseBottles}. Total bottles: ${totalBottles}.`;
+}
+
+async function clearCurrentPallet() {
+  const palletNumber = document.getElementById("palletNumber").value.trim();
+
+  if (!isValidPalletNumber(palletNumber)) {
+    showMessage("loadMessage", `Pallet must be between 1 and ${maxPallets}.`, "error");
+    return;
+  }
+
+  if (!confirm(`Are you sure you want to clear pallet ${palletNumber}?`)) return;
+
+  try {
+    const response = await fetch(SCRIPT_URL, {
+      method: "POST",
+      body: JSON.stringify({
+        action: "clearPallet",
+        palletNumber
+      })
+    });
+
+    const result = await response.json();
+
+    if (result.success) {
+      batchEntries = [];
+      renderBatchTable();
+      showMessage("loadMessage", result.message, "success");
+      await loadAllPallets();
+    } else {
+      showMessage("loadMessage", result.message, "error");
+    }
+  } catch {
+    showMessage("loadMessage", "Could not clear pallet.", "error");
+  }
+}
+
+async function clearMultiplePallets() {
+  const raw = document.getElementById("clearPalletList").value.trim();
+
+  const palletNumbers = raw
+    .split(",")
+    .map(p => p.trim())
+    .filter(Boolean);
+
+  if (!palletNumbers.length) {
+    showMessage("clearMessage", "Enter at least one pallet number.", "error");
+    return;
+  }
+
+  const invalid = palletNumbers.filter(p => !isValidPalletNumber(p));
+
+  if (invalid.length) {
+    showMessage("clearMessage", `Invalid pallet(s): ${invalid.join(", ")}. Must be between 1 and ${maxPallets}.`, "error");
+    return;
+  }
+
+  if (!confirm(`Are you sure you want to clear pallets: ${palletNumbers.join(", ")}?`)) return;
+
+  try {
+    const response = await fetch(SCRIPT_URL, {
+      method: "POST",
+      body: JSON.stringify({
+        action: "clearMultiplePallets",
+        palletNumbers
+      })
+    });
+
+    const result = await response.json();
+
+    if (result.success) {
+      document.getElementById("clearPalletList").value = "";
+      showMessage("clearMessage", result.message, "success");
+      await loadAllPallets();
+    } else {
+      showMessage("clearMessage", result.message, "error");
+    }
+  } catch {
+    showMessage("clearMessage", "Could not clear selected pallets.", "error");
+  }
+}
+
+async function uploadInventoryFile() {
+  const fileInput = document.getElementById("inventoryFile");
+  const file = fileInput.files[0];
+
+  if (!file) {
+    showMessage("inventoryUploadMessage", "Please choose an inventory file first.", "error");
+    return;
+  }
+
+  if (currentUser.role !== "Manager") {
+    showMessage("inventoryUploadMessage", "Only managers can upload inventory.", "error");
+    return;
+  }
+
+  try {
+    showMessage("inventoryUploadMessage", "Reading inventory file...", "");
+
+    const data = await file.arrayBuffer();
+
+    const workbook = XLSX.read(data, {
+      type: "array"
+    });
+
+    const firstSheetName = workbook.SheetNames[0];
+    const worksheet = workbook.Sheets[firstSheetName];
+
+    const rows = XLSX.utils.sheet_to_json(worksheet, {
+      header: 1,
+      defval: ""
+    });
+
+    if (!rows.length) {
+      showMessage("inventoryUploadMessage", "The uploaded file is empty.", "error");
+      return;
+    }
+
+    const response = await fetch(SCRIPT_URL, {
+      method: "POST",
+      body: JSON.stringify({
+        action: "replaceInventory",
+        rows
+      })
+    });
+
+    const result = await response.json();
+
+    if (result.success) {
+      showMessage("inventoryUploadMessage", result.message, "success");
+      await loadInventory();
+      fileInput.value = "";
+    } else {
+      showMessage("inventoryUploadMessage", result.message, "error");
+    }
+
+  } catch {
+    showMessage("inventoryUploadMessage", "Could not upload inventory file.", "error");
+  }
+}
+
+function showMessage(id, text, type) {
+  const el = document.getElementById(id);
+  el.textContent = text;
+  el.className = `message ${type || ""}`;
+}
+
+function clearAllMessages() {
+  const messageIds = [
+    "loadMessage",
+    "saveMessage",
+    "totalsBox",
+    "clearMessage",
+    "inventoryUploadMessage",
+    "breakerMessage",
+    "orderMessage",
+    "inventoryEntryMessage",
+    "inventoryEntryProductInfo",
+    "inventoryScannerMessage",
+    "barcodeUploadMessage",
+    "inventoryReportMessage",
+    "tastingMessage",
+    "recountInventoryUploadMessage",
+    "recountEntryMessage",
+    "recountLastSavedInfo",
+    "recountReportMessage"
+  ];
+
+  messageIds.forEach(id => {
+    const el = document.getElementById(id);
+    if (el) {
+      el.textContent = "";
+      el.className = "message";
+    }
+  });
+}
+
+let selectedBreakerItem = null;
+
+const breakerSearchInput = document.getElementById("breakerSearch");
+const breakerSuggestionsBox = document.getElementById("breakerSuggestions");
+
+breakerSearchInput.addEventListener("input", function () {
+  const query = this.value.toLowerCase().trim();
+  breakerSuggestionsBox.innerHTML = "";
+
+  if (!query) {
+    breakerSuggestionsBox.style.display = "none";
+    return;
+  }
+
+  const matches = inventory.filter(item =>
+    String(item.itemNo).toLowerCase().includes(query) ||
+    String(item.description).toLowerCase().includes(query)
+  ).slice(0, 20);
+
+  if (!matches.length) {
+    breakerSuggestionsBox.style.display = "none";
+    return;
+  }
+
+  matches.forEach(item => {
+    const div = document.createElement("div");
+    div.className = "suggestion-item";
+    div.textContent = `${item.itemNo} - ${item.description}`;
+    div.onclick = () => selectBreakerProduct(item);
+    breakerSuggestionsBox.appendChild(div);
+  });
+
+  breakerSuggestionsBox.style.display = "block";
+});
+
+function selectBreakerProduct(item) {
+  selectedBreakerItem = item;
+
+  breakerSearchInput.value = `${item.itemNo} - ${item.description}`;
+  breakerSuggestionsBox.style.display = "none";
+
+  document.getElementById("selectedBreakerProduct").textContent =
+    `Selected: ${item.itemNo} | ${item.description}`;
+
+  document.getElementById("costEa").value = Number(item.costEa || 0).toFixed(2);
+  document.getElementById("breakerSalesRep").value = item.salesRep || "";
+  document.getElementById("breakerVendor").value = item.vendor || "";
+
+  const previousLog = breakersData.find(row =>
+    String(row.itemNo).trim() === String(item.itemNo).trim()
+  );
+
+  if (previousLog) {
+    document.getElementById("breakerQty").value = Number(previousLog.breaker || 0);
+    document.getElementById("spoiledQty").value = Number(previousLog.spoiled || 0);
+    document.getElementById("damagedLabelQty").value = Number(previousLog.damagedLabel || 0);
+
+    showMessage("breakerMessage", "Previous breaker log found and auto-populated.", "success");
+  } else {
+    document.getElementById("breakerQty").value = 0;
+    document.getElementById("spoiledQty").value = 0;
+    document.getElementById("damagedLabelQty").value = 0;
+    showMessage("breakerMessage", "", "");
+  }
+
+  calculateBreakerTotals();
+}
+
+function calculateBreakerTotals() {
+  const breaker = Number(document.getElementById("breakerQty").value || 0);
+  const spoiled = Number(document.getElementById("spoiledQty").value || 0);
+  const damagedLabel = Number(document.getElementById("damagedLabelQty").value || 0);
+  const costEa = Number(document.getElementById("costEa").value || 0);
+
+  const quantity = breaker + spoiled + damagedLabel;
+  const totalCost = quantity * costEa;
+
+  document.getElementById("breakerQuantity").value = quantity;
+  document.getElementById("totalCost").value = totalCost.toFixed(2);
+}
+
+async function saveBreakerEntry() {
+  if (!selectedBreakerItem) {
+    showMessage("breakerMessage", "Please select a product first.", "error");
+    return;
+  }
+
+  const breaker = Number(document.getElementById("breakerQty").value || 0);
+  const spoiled = Number(document.getElementById("spoiledQty").value || 0);
+  const damagedLabel = Number(document.getElementById("damagedLabelQty").value || 0);
+  const quantity = breaker + spoiled + damagedLabel;
+
+  if (quantity <= 0) {
+    await deleteBreaker(selectedBreakerItem.itemNo, false);
+    showMessage("breakerMessage", "Entry removed because total is 0.", "success");
+    clearBreakerForm();
+    return;
+  }
+
+  const entry = {
+    itemNo: selectedBreakerItem.itemNo,
+    description: selectedBreakerItem.description,
+    breaker,
+    spoiled,
+    damagedLabel,
+    quantity,
+    costEa: Number(document.getElementById("costEa").value || 0),
+    totalCost: Number(document.getElementById("totalCost").value || 0),
+    salesRep: document.getElementById("breakerSalesRep").value,
+    vendor: document.getElementById("breakerVendor").value
+  };
+
+  try {
+    showMessage("breakerMessage", "Saving breaker entry...", "");
+
+    const response = await fetch(SCRIPT_URL, {
+      method: "POST",
+      body: JSON.stringify({
+        action: "saveBreakerEntry",
+        entry
+      })
+    });
+
+    const result = await response.json();
+
+    if (result.success) {
+      showMessage("breakerMessage", result.message, "success");
+      await loadBreakers();
+      clearBreakerForm();
+    } else {
+      showMessage("breakerMessage", result.message, "error");
+    }
+
+  } catch {
+    showMessage("breakerMessage", "Could not save breaker entry.", "error");
+  }
+}
+
+function clearBreakerForm() {
+  selectedBreakerItem = null;
+
+  document.getElementById("breakerSearch").value = "";
+  document.getElementById("selectedBreakerProduct").textContent = "";
+  document.getElementById("breakerQty").value = 0;
+  document.getElementById("spoiledQty").value = 0;
+  document.getElementById("damagedLabelQty").value = 0;
+  document.getElementById("breakerQuantity").value = "";
+  document.getElementById("costEa").value = "";
+  document.getElementById("totalCost").value = "";
+  document.getElementById("breakerSalesRep").value = "";
+  document.getElementById("breakerVendor").value = "";
+}
+
+async function loadBreakers() {
+  try {
+    const response = await fetch(`${SCRIPT_URL}?action=getBreakers`);
+    const result = await response.json();
+
+    if (result.success) {
+      breakersData = result.breakers || [];
+      populateBreakerFilters();
+      renderBreakersTable();
+    } else {
+      showMessage("breakerMessage", result.message, "error");
+    }
+  } catch {
+    showMessage("breakerMessage", "Could not load breakers log.", "error");
+  }
+}
+
+function populateBreakerFilters() {
+  const vendorFilter = document.getElementById("breakerVendorFilter");
+  const repFilter = document.getElementById("breakerRepFilter");
+
+  if (!vendorFilter || !repFilter) return;
+
+  const currentVendor = vendorFilter.value;
+  const currentRep = repFilter.value;
+
+  const vendors = [...new Set(breakersData.map(row => String(row.vendor || "").trim()).filter(Boolean))].sort();
+  const reps = [...new Set(breakersData.map(row => String(row.salesRep || "").trim()).filter(Boolean))].sort();
+
+  vendorFilter.innerHTML = `<option value="">All Vendors</option>`;
+  repFilter.innerHTML = `<option value="">All Sales Reps</option>`;
+
+  vendors.forEach(vendor => {
+    const option = document.createElement("option");
+    option.value = vendor;
+    option.textContent = vendor;
+    vendorFilter.appendChild(option);
+  });
+
+  reps.forEach(rep => {
+    const option = document.createElement("option");
+    option.value = rep;
+    option.textContent = rep;
+    repFilter.appendChild(option);
+  });
+
+  vendorFilter.value = vendors.includes(currentVendor) ? currentVendor : "";
+  repFilter.value = reps.includes(currentRep) ? currentRep : "";
+}
+
+function getFilteredBreakersData() {
+  const vendorFilter = document.getElementById("breakerVendorFilter")?.value || "";
+  const repFilter = document.getElementById("breakerRepFilter")?.value || "";
+
+  return breakersData.filter(row => {
+    const matchesVendor = !vendorFilter || String(row.vendor || "").trim() === vendorFilter;
+    const matchesRep = !repFilter || String(row.salesRep || "").trim() === repFilter;
+    return matchesVendor && matchesRep;
+  });
+}
+
+function escapeForOnclick(value) {
+  return String(value).replace(/\\/g, "\\\\").replace(/'/g, "\\'");
+}
+
+function renderBreakersTable() {
+  const tbody = document.getElementById("breakersTableBody");
+  const summary = document.getElementById("breakersSummary");
+
+  if (!tbody) return;
+
+  const filteredBreakers = getFilteredBreakersData();
+
+  tbody.innerHTML = "";
+
+  if (!filteredBreakers.length) {
+    tbody.innerHTML = `<tr><td colspan="11">No broken products found for the selected filters.</td></tr>`;
+    if (summary) {
+      summary.textContent = "Total Broken Products: 0 | Total Cost: $0.00";
+    }
+    return;
+  }
+
+  let totalBrokenProducts = 0;
+  let totalBreakerCost = 0;
+
+  filteredBreakers.forEach(row => {
+    totalBrokenProducts += Number(row.quantity || 0);
+    totalBreakerCost += Number(row.totalCost || 0);
+  });
+
+  if (summary) {
+    summary.textContent =
+      `Total Broken Products: ${totalBrokenProducts} | Total Cost: $${totalBreakerCost.toFixed(2)}`;
+  }
+
+  filteredBreakers.forEach(row => {
+    const tr = document.createElement("tr");
+
+    tr.innerHTML = `
+      <td>${row.itemNo}</td>
+      <td>${row.description}</td>
+      <td>${row.breaker}</td>
+      <td>${row.spoiled}</td>
+      <td>${row.damagedLabel}</td>
+      <td>${row.quantity}</td>
+      <td>${Number(row.costEa || 0).toFixed(2)}</td>
+      <td>${Number(row.totalCost || 0).toFixed(2)}</td>
+      <td>${row.salesRep || ""}</td>
+      <td>${row.vendor || ""}</td>
+      <td><button class="danger" onclick="deleteBreaker('${escapeForOnclick(row.itemNo)}')">Remove</button></td>
+    `;
+
+    tbody.appendChild(tr);
+  });
+}
+
+async function deleteBreaker(itemNo, askConfirm = true) {
+  if (askConfirm && !confirm(`Remove breaker entry for item ${itemNo}?`)) return;
+
+  try {
+    const response = await fetch(SCRIPT_URL, {
+      method: "POST",
+      body: JSON.stringify({
+        action: "deleteBreakerEntry",
+        itemNo
+      })
+    });
+
+    const result = await response.json();
+
+    if (result.success) {
+      showMessage("breakerMessage", result.message || "Breaker entry removed.", "success");
+      await loadBreakers();
+    } else {
+      showMessage("breakerMessage", result.message, "error");
+    }
+
+  } catch {
+    showMessage("breakerMessage", "Could not delete breaker entry.", "error");
+  }
+}
+
+function downloadBreakersExcel() {
+  const exportData = getFilteredBreakersData();
+
+  if (!exportData.length) {
+    showMessage("breakerMessage", "No breaker entries available to download for the selected filters.", "error");
+    return;
+  }
+
+  const rows = [
+    [
+      "ITEM NO.",
+      "DESCRIPTION",
+      "BREAKER",
+      "SPOILED",
+      "DAMAGED LABEL",
+      "QUANTITY",
+      "COST / EA",
+      "TOTAL COST",
+      "SALES REP",
+      "VENDOR"
+    ]
+  ];
+
+  exportData.forEach(row => {
+    rows.push([
+      row.itemNo,
+      row.description,
+      Number(row.breaker || 0),
+      Number(row.spoiled || 0),
+      Number(row.damagedLabel || 0),
+      Number(row.quantity || 0),
+      Number(row.costEa || 0),
+      Number(row.totalCost || 0),
+      row.salesRep || "",
+      row.vendor || ""
+    ]);
+  });
+
+  const worksheet = XLSX.utils.aoa_to_sheet(rows);
+  const workbook = XLSX.utils.book_new();
+
+  XLSX.utils.book_append_sheet(workbook, worksheet, "Breakers");
+
+  XLSX.writeFile(workbook, "breakers-log.xlsx");
+}
+
+
+document.addEventListener("click", function(e) {
+  if (!e.target.closest(".order-search-wrap")) {
+    document.querySelectorAll(".order-suggestions").forEach(box => {
+      box.style.display = "none";
+    });
+  }
+});
+
+
+function formatTimestampEST(value) {
+  if (!value) return "";
+
+  const date = new Date(value);
+
+  if (isNaN(date.getTime())) {
+    return value;
+  }
+
+  return date.toLocaleString("en-US", {
+    timeZone: "America/New_York",
+    month: "numeric",
+    day: "numeric",
+    year: "numeric",
+    hour: "numeric",
+    minute: "2-digit",
+    hour12: true
+  }) + " EST";
+}
+
+async function loadCustomers() {
+  const loader = document.getElementById("customerLoadingBar");
+
+  try {
+    if (loader) loader.style.display = "block";
+
+    const res = await fetch(`${SCRIPT_URL}?action=getCustomers`);
+    const data = await res.json();
+
+    if (data.success) {
+      customersData = data.customers || {};
+      populateCustomerDatalist();
+    }
+  } catch {
+    showMessage("orderMessage", "Could not load saved customers.", "error");
+  } finally {
+    if (loader) loader.style.display = "none";
+  }
+}
+
+function populateCustomerDatalist() {
+  const list = document.getElementById("customerNameList");
+  if (!list) return;
+
+  list.innerHTML = "";
+
+  Object.values(customersData).forEach(customer => {
+    const option = document.createElement("option");
+    option.value = customer.name || "";
+    list.appendChild(option);
+  });
+}
+
+function populateInventoryDatalist() {
+  const list = document.getElementById("inventoryDescriptions");
+  if (!list) return;
+
+  list.innerHTML = "";
+
+  inventory.forEach(item => {
+    const option = document.createElement("option");
+    option.value = item.description || "";
+    option.label = `${item.itemNo || ""} - ${item.description || ""}`;
+    list.appendChild(option);
+  });
+}
+
+function checkCustomerName() {
+  const nameInput = document.getElementById("customerName");
+  const name = nameInput.value.trim();
+
+  if (!name) return;
+
+  const customer = customersData[name.toLowerCase()];
+
+  if (customer) {
+    document.getElementById("prevOrder").value = formatTimestampEST(customer.previousOrderedOn);
+    document.getElementById("phone").value = customer.phone || "";
+    document.getElementById("address").value = customer.address || "";
+    document.getElementById("apartment").value = customer.apartment || "";
+    document.getElementById("zip").value = customer.zip || "";
+    document.getElementById("paymentMethod").value = customer.paymentMethod || "";
+    document.getElementById("cardLast4").value = customer.cardLast4 || "";
+    document.getElementById("paymentStatus").value = customer.paymentStatus || "";
+    document.getElementById("instructions").value = customer.instructions || "";
+  
+    orderItems = Array.isArray(customer.orderItems) ? customer.orderItems : [];
+    renderOrderTable();
+    calculateOrderTotals();
+  
+    showMessage("orderMessage", "Existing customer found. Latest order details loaded.", "success");
+  } else {
+    document.getElementById("prevOrder").value = "";
+    showMessage("orderMessage", "New customer will be created when this order is submitted.", "success");
+    alert("New customer will be created.");
+  }
+}
+
+function addOrderRow() {
+  orderItems.push({ itemNo: "", description: "", price: 0, qty: 1 });
+  renderOrderTable();
+}
+
+function renderOrderTable() {
+  const tbody = document.getElementById("orderTable");
+  if (!tbody) return;
+
+  tbody.innerHTML = "";
+
+  if (!orderItems.length) {
+    tbody.innerHTML = `<tr><td colspan="6">No products added yet.</td></tr>`;
+    calculateOrderTotals();
+    return;
+  }
+
+  orderItems.forEach((item, i) => {
+    const price = Number(item.price || 0);
+    const qty = Number(item.qty || 0);
+    const total = price * qty;
+
+    const tr = document.createElement("tr");
+
+    tr.innerHTML = `
+      <td class="readonly-field">${item.itemNo || ""}</td>
+      <td>
+        <div class="order-search-wrap">
+          <input value="${escapeHtml(item.description || "")}" oninput="showOrderSuggestions(${i}, this.value)" autocomplete="off" />
+          <div id="orderSuggestions-${i}" class="order-suggestions"></div>
+        </div>
+      </td>
+      <td class="readonly-field">${price.toFixed(2)}</td>
+      <td><input type="number" min="0" value="${qty}" onchange="updateOrderItem(${i}, 'qty', this.value)" /></td>
+      <td class="readonly-field">${total.toFixed(2)}</td>
+      <td><button class="danger" onclick="removeOrderItem(${i})">Remove</button></td>
+    `;
+
+    tbody.appendChild(tr);
+  });
+
+  calculateOrderTotals();
+}
+
+function updateOrderItem(i, field, value) {
+  if (!orderItems[i]) return;
+
+  if (field === "qty") {
+    orderItems[i].qty = Number(value || 0);
+  } else if (field === "description") {
+    orderItems[i].description = value;
+
+    const inv = findInventoryByDescription(value);
+
+    if (inv) {
+      selectOrderProduct(i, inv);
+      return;
+    } else {
+      orderItems[i].itemNo = "";
+      orderItems[i].price = 0;
+    }
+  }
+
+  renderOrderTable();
+}
+
+function showOrderSuggestions(index, query) {
+  if (!orderItems[index]) return;
+
+  orderItems[index].description = query;
+
+  const box = document.getElementById(`orderSuggestions-${index}`);
+  if (!box) return;
+
+  box.innerHTML = "";
+
+  const cleanQuery = String(query || "").toLowerCase().trim();
+
+  if (!cleanQuery) {
+    orderItems[index].itemNo = "";
+    orderItems[index].price = 0;
+    box.style.display = "none";
+    renderOrderTable();
+    return;
+  }
+
+  const matches = inventory.filter(item =>
+    String(item.description || "").toLowerCase().includes(cleanQuery) ||
+    String(item.itemNo || "").toLowerCase().includes(cleanQuery)
+  ).slice(0, 20);
+
+  if (!matches.length) {
+    orderItems[index].itemNo = "";
+    orderItems[index].price = 0;
+    box.style.display = "none";
+    calculateOrderTotals();
+    return;
+  }
+
+  matches.forEach(item => {
+    const div = document.createElement("div");
+    div.className = "order-suggestion-item";
+    div.textContent = `${item.itemNo || ""} - ${item.description || ""}`;
+    div.onclick = () => selectOrderProduct(index, item);
+    box.appendChild(div);
+  });
+
+  box.style.display = "block";
+}
+
+function selectOrderProduct(index, item) {
+  if (!orderItems[index]) return;
+
+  orderItems[index].itemNo = item.itemNo || "";
+  orderItems[index].description = item.description || "";
+  orderItems[index].price = Number(item.basePrice || item.price || item.base || item["Base Price"] || 0);
+  orderItems[index].qty = Number(orderItems[index].qty || 1);
+
+  renderOrderTable();
+}
+
+function findInventoryByDescription(description) {
+  const query = String(description || "").trim().toLowerCase();
+  if (!query) return null;
+
+  return inventory.find(item =>
+    String(item.description || "").trim().toLowerCase() === query
+  ) || null;
+}
+
+function removeOrderItem(i) {
+  orderItems.splice(i, 1);
+  renderOrderTable();
+}
+
+function calculateOrderTotals() {
+  let subtotal = 0;
+
+  orderItems.forEach(item => {
+    subtotal += Number(item.price || 0) * Number(item.qty || 0);
+  });
+
+  const delivery = document.getElementById("delivery")?.checked ? 10 : 0;
+  const tax = (subtotal + delivery) * 0.08875;
+  const taxExemptValue = document.getElementById("taxExempt")?.checked ? -tax : 0;
+  const total = subtotal + delivery + tax + taxExemptValue;
+
+  document.getElementById("subtotal").textContent = subtotal.toFixed(2);
+  document.getElementById("tax").textContent = tax.toFixed(2);
+  document.getElementById("taxExemptAmount").textContent = taxExemptValue.toFixed(2);
+  document.getElementById("grandTotal").textContent = total.toFixed(2);
+}
+
+async function saveCustomerOrder() {
+  const name = document.getElementById("customerName").value.trim();
+
+  if (!name) {
+    showMessage("orderMessage", "Customer name is required.", "error");
+    return;
+  }
+
+  if (!orderItems.length) {
+    showMessage("orderMessage", "Add at least one product to the order.", "error");
+    return;
+  }
+
+  const invalidItem = orderItems.find(item => !item.itemNo || !item.description || Number(item.qty || 0) <= 0);
+
+  if (invalidItem) {
+    showMessage("orderMessage", "Every order line must have a valid product and quantity.", "error");
+    return;
+  }
+
+  const payload = {
+    action: "saveCustomerOrder",
+    name,
+    phone: document.getElementById("phone").value.trim(),
+    address: document.getElementById("address").value.trim(),
+    apartment: document.getElementById("apartment").value.trim(),
+    zip: document.getElementById("zip").value.trim(),
+    paymentMethod: document.getElementById("paymentMethod").value.trim(),
+    cardLast4: document.getElementById("cardLast4").value.trim(),
+    paymentStatus: document.getElementById("paymentStatus").value.trim(),
+    instructions: document.getElementById("instructions").value.trim(),
+    items: orderItems,
+    subtotal: Number(document.getElementById("subtotal").textContent || 0),
+    delivery: document.getElementById("delivery").checked ? 10 : 0,
+    tax: Number(document.getElementById("tax").textContent || 0),
+    taxExempt: Number(document.getElementById("taxExemptAmount").textContent || 0),
+    total: Number(document.getElementById("grandTotal").textContent || 0)
+  };
+
+  try {
+    showMessage("orderMessage", "Saving customer order...", "");
+
+    const res = await fetch(SCRIPT_URL, {
+      method: "POST",
+      body: JSON.stringify(payload)
+    });
+
+    const result = await res.json();
+
+    if (result.success) {
+      showMessage("orderMessage", result.message || "Customer order saved successfully.", "success");
+      await loadCustomers();
+      clearCustomerOrderForm();
+    } else {
+      showMessage("orderMessage", result.message || "Could not save customer order.", "error");
+    }
+  } catch {
+    showMessage("orderMessage", "Could not save customer order.", "error");
+  }
+}
+
+function clearCustomerOrderForm() {
+  document.getElementById("customerName").value = "";
+  document.getElementById("prevOrder").value = "";
+  document.getElementById("phone").value = "";
+  document.getElementById("address").value = "";
+  document.getElementById("apartment").value = "";
+  document.getElementById("zip").value = "";
+  document.getElementById("paymentMethod").value = "";
+  document.getElementById("cardLast4").value = "";
+  document.getElementById("paymentStatus").value = "";
+  document.getElementById("instructions").value = "";
+  document.getElementById("delivery").checked = true;
+  document.getElementById("taxExempt").checked = false;
+  orderItems = [];
+  renderOrderTable();
+}
+
+function escapeHtml(value) {
+  return String(value)
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#039;");
+}
+
+function printCustomerOrder() {
+  const name = document.getElementById("customerName").value || "";
+  const phone = document.getElementById("phone").value || "";
+  const address = document.getElementById("address").value || "";
+  const apartment = document.getElementById("apartment").value || "";
+  const zip = document.getElementById("zip").value || "";
+  const instructions = document.getElementById("instructions").value || "";
+
+  const subtotal = document.getElementById("subtotal").textContent;
+  const delivery = document.getElementById("delivery").checked ? "10.00" : "0.00";
+  const tax = document.getElementById("tax").textContent;
+  const taxExempt = document.getElementById("taxExemptAmount").textContent;
+  const total = document.getElementById("grandTotal").textContent;
+
+  let itemRows = "";
+
+  orderItems.forEach(item => {
+    const lineTotal = Number(item.price || 0) * Number(item.qty || 0);
+
+    itemRows += `
+      <tr>
+        <td>${item.itemNo || ""}</td>
+        <td>${item.description || ""}</td>
+        <td>$${Number(item.price || 0).toFixed(2)}</td>
+        <td>${item.qty || 0}</td>
+        <td>$${lineTotal.toFixed(2)}</td>
+      </tr>
+    `;
+  });
+
+  const printWindow = window.open("", "_blank");
+
+  printWindow.document.write(`
+    <html>
+      <head>
+        <title>Customer Order</title>
+        <style>
+          body {
+            font-family: Arial, sans-serif;
+            padding: 30px;
+            color: #111;
+          }
+
+          h1 {
+            margin-bottom: 10px;
+          }
+
+          .section {
+            margin-bottom: 24px;
+          }
+
+          table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 12px;
+          }
+
+          th, td {
+            border-bottom: 1px solid #ddd;
+            padding: 8px;
+            text-align: left;
+            font-size: 14px;
+          }
+
+          th {
+            background: #f4f4f4;
+          }
+
+          .totals {
+            max-width: 350px;
+            margin-left: auto;
+            margin-top: 20px;
+          }
+
+          .total-line {
+            display: flex;
+            justify-content: space-between;
+            padding: 6px 0;
+            border-bottom: 1px solid #eee;
+          }
+
+          .grand-total {
+            font-size: 18px;
+            font-weight: bold;
+            border-top: 2px solid #111;
+            margin-top: 8px;
+            padding-top: 10px;
+          }
+
+          @media print {
+            button {
+              display: none;
+            }
+          }
+        </style>
+      </head>
+
+      <body>
+        <h1>Customer Order</h1>
+
+        <div class="section">
+          <p><strong>Name:</strong> ${name}</p>
+          <p><strong>Phone Number:</strong> ${phone}</p>
+          <p><strong>Address:</strong> ${address}</p>
+          <p><strong>Apartment:</strong> ${apartment}</p>
+          <p><strong>Zip Code:</strong> ${zip}</p>
+          <p><strong>Special Instructions:</strong> ${instructions}</p>
+        </div>
+
+        <div class="section">
+          <h2>Ordered Items</h2>
+          <table>
+            <thead>
+              <tr>
+                <th>Item No.</th>
+                <th>Description</th>
+                <th>Price</th>
+                <th>Quantity</th>
+                <th>Total</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${itemRows || `<tr><td colspan="5">No items added.</td></tr>`}
+            </tbody>
+          </table>
+        </div>
+
+        <div class="totals">
+          <div class="total-line">
+            <span>Subtotal</span>
+            <strong>$${subtotal}</strong>
+          </div>
+
+          <div class="total-line">
+            <span>Delivery</span>
+            <strong>$${delivery}</strong>
+          </div>
+
+          <div class="total-line">
+            <span>Tax</span>
+            <strong>$${tax}</strong>
+          </div>
+
+          <div class="total-line">
+            <span>Tax Exempt</span>
+            <strong>$${taxExempt}</strong>
+          </div>
+
+          <div class="total-line grand-total">
+            <span>Total</span>
+            <strong>$${total}</strong>
+          </div>
+        </div>
+
+        <script>
+          window.onload = function() {
+            window.print();
+          };
+        <\/script>
+      </body>
+    </html>
+  `);
+
+  printWindow.document.close();
+}
+
+function showCustomerSuggestions(query = "") {
+  const box = document.getElementById("customerSuggestions");
+  if (!box) return;
+
+  box.innerHTML = "";
+
+  const normalizedQuery = String(query || "").toLowerCase().trim();
+
+  const matches = Object.values(customersData)
+    .filter(c => {
+      if (!normalizedQuery) return true;
+      return String(c.name || "").toLowerCase().includes(normalizedQuery);
+    })
+    .sort((a, b) => String(a.name || "").localeCompare(String(b.name || "")))
+    .slice(0, 50);
+
+  if (!matches.length) {
+    box.style.display = "none";
+    return;
+  }
+
+  matches.forEach(customer => {
+    const div = document.createElement("div");
+    div.className = "order-suggestion-item";
+    div.textContent = customer.name;
+    div.onmousedown = (e) => {
+      e.preventDefault();
+      selectCustomer(customer);
+    };
+    box.appendChild(div);
+  });
+
+  box.style.display = "block";
+}
+  
+function selectCustomer(customer) {
+  document.getElementById("customerName").value = customer.name;
+  document.getElementById("customerSuggestions").style.display = "none";
+
+  // Autofill fields
+  document.getElementById("prevOrder").value = formatTimestampEST(customer.previousOrderedOn);
+  document.getElementById("phone").value = customer.phone || "";
+  document.getElementById("address").value = customer.address || "";
+  document.getElementById("apartment").value = customer.apartment || "";
+  document.getElementById("zip").value = customer.zip || "";
+  document.getElementById("paymentMethod").value = customer.paymentMethod || "";
+  document.getElementById("cardLast4").value = customer.cardLast4 || "";
+  document.getElementById("paymentStatus").value = customer.paymentStatus || "";
+  document.getElementById("instructions").value = customer.instructions || "";
+
+  // Load previous order items
+  orderItems = Array.isArray(customer.orderItems) ? customer.orderItems : [];
+  renderOrderTable();
+  calculateOrderTotals();
+
+  showMessage("orderMessage", "Existing customer loaded.", "success");
+}
+
+function handleCustomerBlur() {
+  setTimeout(() => {
+    const box = document.getElementById("customerSuggestions");
+    if (box) box.style.display = "none";
+
+    const name = document.getElementById("customerName").value.trim();
+    if (!name) return;
+
+    const customer = customersData[name.toLowerCase()];
+
+    if (!customer) {
+      showMessage("orderMessage", "New customer will be created when this order is submitted.", "success");
+    }
+  }, 150);
+}
+
+function clearCustomerOrder() {
+  if (!confirm("Clear all customer order data?")) return;
+
+  // Reset text fields
+  document.getElementById("customerName").value = "";
+  document.getElementById("prevOrder").value = "";
+  document.getElementById("phone").value = "";
+  document.getElementById("address").value = "";
+  document.getElementById("apartment").value = "";
+  document.getElementById("zip").value = "";
+  document.getElementById("paymentMethod").value = "";
+  document.getElementById("cardLast4").value = "";
+  document.getElementById("paymentStatus").value = "";
+  document.getElementById("instructions").value = "";
+
+  // Reset order items
+  orderItems = [];
+  renderOrderTable();
+
+  // Reset totals
+  document.getElementById("subtotal").textContent = "0.00";
+  document.getElementById("tax").textContent = "0.00";
+  document.getElementById("taxExemptAmount").textContent = "0.00";
+  document.getElementById("grandTotal").textContent = "0.00";
+
+  // Reset checkboxes
+  document.getElementById("delivery").checked = true;
+  document.getElementById("taxExempt").checked = false;
+
+  // Clear messages
+  showMessage("orderMessage", "Order cleared.", "success");
+}
+
+async function loadBarcodes() {
+  try {
+    const response = await fetch(`${SCRIPT_URL}?action=getBarcodes`);
+    const result = await response.json();
+
+    if (result.success) {
+      barcodeData = result.barcodes || [];
+    } else {
+      showMessage("inventoryEntryMessage", result.message, "error");
+    }
+  } catch {
+    showMessage("inventoryEntryMessage", "Could not load barcode data.", "error");
+  }
+}
+
+async function startInventoryScanner() {
+  const box = document.getElementById("inventoryScannerBox");
+
+  box.style.display = "block";
+  showMessage("inventoryScannerMessage", "Starting camera...", "");
+
+  try {
+    inventoryEntryScanner = new ZXing.BrowserMultiFormatReader();
+
+    const devices = await inventoryEntryScanner.listVideoInputDevices();
+
+    if (!devices.length) {
+      showMessage("inventoryScannerMessage", "No camera found.", "error");
+      return;
+    }
+
+    const backCamera = devices.find(device =>
+      device.label.toLowerCase().includes("back") ||
+      device.label.toLowerCase().includes("rear")
+    ) || devices[0];
+
+    inventoryEntryScanner.decodeFromVideoDevice(
+      backCamera.deviceId,
+      "inventoryScannerPreview",
+      (result, err) => {
+        if (result) {
+          handleInventoryBarcode(result.text);
+          stopInventoryScanner();
+        }
+      }
+    );
+
+    showMessage("inventoryScannerMessage", "Camera ready. Point at the barcode.", "success");
+
+  } catch {
+    showMessage("inventoryScannerMessage", "Could not start scanner.", "error");
+  }
+}
+
+function stopInventoryScanner() {
+  if (inventoryEntryScanner) {
+    inventoryEntryScanner.reset();
+    inventoryEntryScanner = null;
+  }
+
+  document.getElementById("inventoryScannerBox").style.display = "none";
+}
+
+function handleInventoryBarcode(scannedCode) {
+  const code = String(scannedCode || "").trim();
+
+  const barcodeMatch = barcodeData.find(row =>
+    String(row.barcode || "").trim() === code
+  );
+
+  if (!barcodeMatch || !barcodeMatch.itemNo) {
+    document.getElementById("inventoryEntryItemNo").value = "";
+    showMessage(
+      "inventoryEntryProductInfo",
+      `No Item No. found for barcode ${code}. Please enter Item No. manually.`,
+      "error"
+    );
+    return;
+  }
+
+  document.getElementById("inventoryEntryItemNo").value = barcodeMatch.itemNo;
+
+  showMessage(
+    "inventoryEntryProductInfo",
+    `Matched: ${barcodeMatch.itemNo} - ${barcodeMatch.description || ""}`,
+    "success"
+  );
+}
+
+async function submitInventoryEntry() {
+  const itemNo = document.getElementById("inventoryEntryItemNo").value.trim();
+  const floor = Number(document.getElementById("floorCount").value || 0);
+  const steel = Number(document.getElementById("steelCount").value || 0);
+  const behindSteel = Number(document.getElementById("behindSteelCount").value || 0);
+
+  if (!itemNo) {
+    showMessage("inventoryEntryMessage", "Item No. is required.", "error");
+    return;
+  }
+
+  try {
+    showMessage("inventoryEntryMessage", "Saving inventory entry...", "");
+
+    const response = await fetch(SCRIPT_URL, {
+      method: "POST",
+      body: JSON.stringify({
+        action: "saveInventoryEntry",
+        itemNo,
+        floor,
+        steel,
+        behindSteel
+      })
+    });
+
+    const result = await response.json();
+
+    if (result.success) {
+      showMessage("inventoryEntryMessage", result.message, "success");
+      clearInventoryEntryForm();
+    } else {
+      showMessage("inventoryEntryMessage", result.message, "error");
+    }
+
+  } catch {
+    showMessage("inventoryEntryMessage", "Could not save inventory entry.", "error");
+  }
+}
+
+function clearInventoryEntryForm() {
+  document.getElementById("inventoryEntryItemNo").value = "";
+  document.getElementById("floorCount").value = 0;
+  document.getElementById("steelCount").value = 0;
+  document.getElementById("behindSteelCount").value = 0;
+  document.getElementById("inventoryEntryProductInfo").textContent = "";
+}
+
+async function uploadBarcodeFile() {
+  const fileInput = document.getElementById("barcodeFile");
+  const file = fileInput.files[0];
+
+  if (!file) {
+    showMessage("barcodeUploadMessage", "Please choose a barcode file first.", "error");
+    return;
+  }
+
+  if (currentUser.role !== "Manager") {
+    showMessage("barcodeUploadMessage", "Only managers can upload barcode files.", "error");
+    return;
+  }
+
+  try {
+    showMessage("barcodeUploadMessage", "Reading barcode file...", "");
+
+    const data = await file.arrayBuffer();
+
+    const workbook = XLSX.read(data, {
+      type: "array"
+    });
+
+    const firstSheetName = workbook.SheetNames[0];
+    const worksheet = workbook.Sheets[firstSheetName];
+
+    const rows = XLSX.utils.sheet_to_json(worksheet, {
+      header: 1,
+      defval: ""
+    });
+
+    if (!rows.length) {
+      showMessage("barcodeUploadMessage", "The uploaded barcode file is empty.", "error");
+      return;
+    }
+
+    const response = await fetch(SCRIPT_URL, {
+      method: "POST",
+      body: JSON.stringify({
+        action: "replaceBarcodes",
+        rows
+      })
+    });
+
+    const result = await response.json();
+
+    if (result.success) {
+      showMessage("barcodeUploadMessage", result.message, "success");
+
+      if (typeof loadBarcodes === "function") {
+        await loadBarcodes();
+      }
+
+      fileInput.value = "";
+    } else {
+      showMessage("barcodeUploadMessage", result.message, "error");
+    }
+
+  } catch {
+    showMessage("barcodeUploadMessage", "Could not upload barcode file.", "error");
+  }
+}
+
+async function generateInventoryReport() {
+  if (currentUser.role !== "Manager") {
+    showMessage("inventoryReportMessage", "Only managers can generate this report.", "error");
+    return;
+  }
+
+  try {
+    showMessage("inventoryReportMessage", "Generating inventory report...", "");
+
+    const response = await fetch(`${SCRIPT_URL}?action=generateInventoryReport`);
+    const result = await response.json();
+
+    if (result.success) {
+      inventoryReportData = result.report || [];
+      renderInventoryReportTable();
+      showMessage("inventoryReportMessage", result.message, "success");
+    } else {
+      showMessage("inventoryReportMessage", result.message, "error");
+    }
+
+  } catch {
+    showMessage("inventoryReportMessage", "Could not generate inventory report.", "error");
+  }
+}
+
+function renderInventoryReportTable() {
+  const head = document.getElementById("inventoryReportHead");
+  const body = document.getElementById("inventoryReportBody");
+
+  if (!head || !body) return;
+
+  head.innerHTML = "";
+  body.innerHTML = "";
+
+  if (!inventoryReportData.length) {
+    body.innerHTML = `<tr><td>No report generated yet.</td></tr>`;
+    return;
+  }
+
+  const headers = inventoryReportData[0];
+  const rows = inventoryReportData.slice(1);
+
+  const headerRow = document.createElement("tr");
+
+  headers.forEach(header => {
+    const th = document.createElement("th");
+    th.textContent = header;
+    headerRow.appendChild(th);
+  });
+
+  head.appendChild(headerRow);
+
+  if (!rows.length) {
+    body.innerHTML = `<tr><td colspan="${headers.length}">No inventory report rows found.</td></tr>`;
+    return;
+  }
+
+  rows.slice(0, 250).forEach(row => {
+    const tr = document.createElement("tr");
+
+    row.forEach((cell, index) => {
+      const td = document.createElement("td");
+      const header = headers[index];
+      const val = Number(cell || 0);
+
+      if (
+        header === "Avg Cost" ||
+        header === "Base Price" ||
+        header === "Gross M" ||
+        header === "Gross M %"
+      ) {
+        td.textContent = val.toFixed(2);
+      } else if (header === "Cost Variance") {
+        td.textContent = `$${val.toFixed(2)}`;
+      } else {
+        td.textContent = cell;
+      }
+
+      if (header === "Count Variance" || header === "Cost Variance") {
+        if (val > 0) {
+          td.style.background = "#e6f7ec";
+          td.style.color = "#0a7a2f";
+          td.style.fontWeight = "bold";
+        } else if (val < 0) {
+          td.style.background = "#fdeaea";
+          td.style.color = "#b00020";
+          td.style.fontWeight = "bold";
+        }
+      }
+
+      tr.appendChild(td);
+    });
+
+    body.appendChild(tr);
+  });
+}
+  
+async function downloadInventoryReportExcel() {
+  if (!inventoryReportData.length) {
+    showMessage("inventoryReportMessage", "Generate the report first before downloading.", "error");
+    return;
+  }
+
+  const workbook = new ExcelJS.Workbook();
+  const worksheet = workbook.addWorksheet("Inventory Report");
+
+  inventoryReportData.forEach(row => {
+    worksheet.addRow(row);
+  });
+
+  const headerRow = worksheet.getRow(1);
+  headerRow.font = { bold: true };
+  headerRow.fill = {
+    type: "pattern",
+    pattern: "solid",
+    fgColor: { argb: "FFF4F6F8" }
+  };
+
+  const headers = inventoryReportData[0];
+  const countVarianceCol = headers.indexOf("Count Variance") + 1;
+  const costVarianceCol = headers.indexOf("Cost Variance") + 1;
+
+  worksheet.columns.forEach(column => {
+    column.width = 18;
+  });
+
+  worksheet.eachRow((row, rowNumber) => {
+    if (rowNumber === 1) return;
+
+    [countVarianceCol, costVarianceCol].forEach(colNumber => {
+      if (colNumber <= 0) return;
+
+      const cell = row.getCell(colNumber);
+      const value = Number(cell.value || 0);
+
+      if (value > 0) {
+        cell.fill = {
+          type: "pattern",
+          pattern: "solid",
+          fgColor: { argb: "FFE6F7EC" }
+        };
+        cell.font = {
+          color: { argb: "FF0A7A2F" },
+          bold: true
+        };
+      } else if (value < 0) {
+        cell.fill = {
+          type: "pattern",
+          pattern: "solid",
+          fgColor: { argb: "FFFDEAEA" }
+        };
+        cell.font = {
+          color: { argb: "FFB00020" },
+          bold: true
+        };
+      }
+    });
+  });
+
+  const buffer = await workbook.xlsx.writeBuffer();
+  const blob = new Blob([buffer], {
+    type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+  });
+
+  const link = document.createElement("a");
+  link.href = URL.createObjectURL(blob);
+  link.download = "inventory-report.xlsx";
+  link.click();
+
+  URL.revokeObjectURL(link.href);
+}
+
+let sortAscending = true;
+
+function sortByCountVariance() {
+  if (!inventoryReportData.length) return;
+
+  const headers = inventoryReportData[0];
+  const index = headers.indexOf("Count Variance");
+
+  const sortedRows = inventoryReportData.slice(1).sort((a, b) => {
+    return sortAscending
+      ? Number(a[index] || 0) - Number(b[index] || 0)
+      : Number(b[index] || 0) - Number(a[index] || 0);
+  });
+
+  sortAscending = !sortAscending;
+
+  inventoryReportData = [headers, ...sortedRows];
+  renderInventoryReportTable();
+}
+
+async function clearInventoryEntries() {
+  if (!confirm("Are you sure you want to clear ALL inventory entries? This cannot be undone.")) {
+    return;
+  }
+
+  try {
+    showMessage("inventoryEntryMessage", "Clearing entries...", "");
+
+    const response = await fetch(SCRIPT_URL, {
+      method: "POST",
+      body: JSON.stringify({
+        action: "clearInventoryEntries",
+        role: currentUser.role
+      })
+    });
+
+    const result = await response.json();
+
+    if (result.success) {
+      showMessage("inventoryEntryMessage", result.message, "success");
+      clearInventoryEntryForm();
+    } else {
+      showMessage("inventoryEntryMessage", result.message, "error");
+    }
+
+  } catch {
+    showMessage("inventoryEntryMessage", "Could not clear entries.", "error");
+  }
+}
+
+function generatePriceTagBuilders() {
+  const count = Number(document.getElementById("priceTagCount").value || 1);
+
+  priceTags = [];
+
+  for (let i = 0; i < count; i++) {
+    priceTags.push(createBlankPriceTag());
+  }
+
+  selectedPriceTagIndex = 0;
+
+  renderPriceTagList();
+  loadSelectedPriceTagEditor();
+  renderPriceTagPreview();
+}
+
+function createBlankPriceTag() {
+  return {
+    itemNo: "",
+    productName: "",
+    productType: "",
+    productSize: "",
+    price: 0,
+    imageUrl: "",
+    imageSource: "url",
+    productUrl: "",
+    qrDataUrl: "",
+    presetImageUrl: "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSZzshOBGqqns5_63ZkWXrdoENKNp5ZBjoDLg&s",
+    slogan: "",
+    sloganBg: "#ffffff",
+    sloganColor: "#000000",
+    objectPositionX: 50,
+    objectPositionY: 50,
+    objectZoom: 100,
+    nameFont: 60,
+    typeFont: 35,
+    sizeFont: 26,
+    priceFont: 125,
+    itemNoFont: 16,
+    sloganFont: 24
+  };
+}
+
+function generateVisualPriceTags() {
+  const count = Number(document.getElementById("priceTagCount").value || 1);
+
+  priceTags = [];
+
+  for (let i = 0; i < count; i++) {
+    priceTags.push(createBlankPriceTag());
+  }
+
+  renderPriceTagProductSelectors();
+  renderPriceTagPreview();
+  closePriceElementEditor();
+}
+
+function renderPriceTagProductSelectors() {
+  const container = document.getElementById("priceTagProductSelectors");
+  container.innerHTML = "";
+
+  priceTags.forEach((tag, index) => {
+    const div = document.createElement("div");
+    div.className = "price-product-selector";
+
+    div.innerHTML = `
+      <label>Tag ${index + 1} Product</label>
+      <div class="price-tag-search-wrap">
+        <input 
+          value="${tag.searchDisplay || ""}"
+          placeholder="Search inventory..."
+          oninput="showVisualPriceTagSuggestions(${index}, this.value)"
+          autocomplete="off"
+        />
+        <div id="visualPriceTagSuggestions-${index}" class="price-tag-suggestions"></div>
+      </div>
+    `;
+
+    container.appendChild(div);
+  });
+}
+
+function showVisualPriceTagSuggestions(index, query) {
+  const box = document.getElementById(`visualPriceTagSuggestions-${index}`);
+  box.innerHTML = "";
+
+  const search = String(query || "").toLowerCase().trim();
+
+  priceTags[index].productName = query;
+  renderPriceTagPreview();
+
+  if (!search) {
+    box.style.display = "none";
+    return;
+  }
+
+  const matches = inventory.filter(item =>
+    String(item.itemNo || "").toLowerCase().includes(search) ||
+    String(item.description || "").toLowerCase().includes(search)
+  ).slice(0, 20);
+
+  if (!matches.length) {
+    box.style.display = "none";
+    return;
+  }
+
+  matches.forEach(item => {
+    const div = document.createElement("div");
+    div.className = "price-tag-suggestion-item";
+    div.textContent = `${item.itemNo} - ${item.description}`;
+    div.onmousedown = e => {
+      e.preventDefault();
+      selectVisualPriceTagProduct(index, item);
+    };
+    box.appendChild(div);
+  });
+
+  box.style.display = "block";
+}
+
+function selectVisualPriceTagProduct(index, item) {
+  const tag = priceTags[index];
+
+  // KEEP SEARCH BOX LABEL
+  tag.searchDisplay = item.description || "";
+
+  // BASIC INVENTORY INFO
+  tag.itemNo = item.itemNo || "";
+  tag.price = Number(item.basePrice || 0);
+
+  // DEFAULT PRODUCT NAME FROM INVENTORY
+  tag.productName = item.description || "";
+
+  // AUTO LOAD SAVED SETTINGS
+  const saved = priceTagSettings[tag.itemNo];
+
+  if (saved) {
+
+    // IMPORTANT:
+    // DO NOT overwrite searchDisplay
+    // DO NOT overwrite selected dropdown text
+
+    tag.imageUrl = saved.imageUrl || "";
+    tag.objectPositionX = saved.objectPositionX || 50;
+    tag.objectPositionY = saved.objectPositionY || 50;
+    tag.objectZoom = saved.objectZoom || 100;
+
+    tag.productName = saved.productName || tag.productName;
+    tag.productType = saved.productType || "";
+    tag.productSize = saved.productSize || "";
+    tag.productUrl = saved.productUrl || "";
+
+    tag.nameFont = saved.nameFont || 48;
+    tag.typeFont = saved.typeFont || 28;
+    tag.sizeFont = saved.sizeFont || 22;
+    tag.priceFont = saved.priceFont || 112;
+    tag.itemNoFont = saved.itemNoFont || 16;
+    tag.sloganFont = saved.sloganFont || 24;
+
+    tag.slogan = saved.slogan || "";
+    tag.sloganBg = saved.sloganBg || "#ffffff";
+    tag.sloganColor = saved.sloganColor || "#000000";
+
+    generatePriceTagQR(index);
+  }
+
+  const box = document.getElementById(`visualPriceTagSuggestions-${index}`);
+  if (box) {
+    box.style.display = "none";
+  }
+
+  renderPriceTagProductSelectors();
+  renderPriceTagPreview();
+}
+
+
+function renderPriceTagList() {
+  const list = document.getElementById("priceTagList");
+  list.innerHTML = "";
+
+  priceTags.forEach((tag, index) => {
+    const btn = document.createElement("button");
+    btn.textContent = `Tag ${index + 1}`;
+    btn.className = index === selectedPriceTagIndex ? "active" : "";
+    btn.onclick = () => {
+      selectedPriceTagIndex = index;
+      renderPriceTagList();
+      loadSelectedPriceTagEditor();
+    };
+    list.appendChild(btn);
+  });
+}
+
+function loadSelectedPriceTagEditor() {
+  if (!priceTags.length) return;
+
+  const tag = priceTags[selectedPriceTagIndex];
+
+  document.getElementById("selectedPriceTagTitle").textContent = `Editing Tag ${selectedPriceTagIndex + 1}`;
+
+  document.getElementById("priceTagSearchInput").value = tag.productName || "";
+  document.getElementById("priceTagItemNo").value = tag.itemNo || "";
+  document.getElementById("priceTagProductName").value = tag.productName || "";
+  document.getElementById("priceTagProductType").value = tag.productType || "";
+  document.getElementById("priceTagProductSize").value = tag.productSize || "";
+  document.getElementById("priceTagPrice").value = Number(tag.price || 0).toFixed(2);
+  document.getElementById("priceTagImageUrl").value = tag.imageUrl || "";
+  document.getElementById("priceTagProductUrl").value = tag.productUrl || "";
+  document.getElementById("priceTagSlogan").value = tag.slogan || "";
+  document.getElementById("priceTagSloganBg").value = tag.sloganBg || "#ffffff";
+  document.getElementById("priceTagSloganColor").value = tag.sloganColor || "#000000";
+
+  document.getElementById("priceTagNameFont").value = tag.nameFont;
+  document.getElementById("priceTagTypeFont").value = tag.typeFont;
+  document.getElementById("priceTagSizeFont").value = tag.sizeFont;
+  document.getElementById("priceTagPriceFont").value = tag.priceFont;
+  document.getElementById("priceTagItemNoFont").value = tag.itemNoFont;
+  document.getElementById("priceTagSloganFont").value = tag.sloganFont;
+
+  document.getElementById("priceTagObjectZoom").value = tag.objectZoom || 100;
+  document.getElementById("priceTagObjectPositionX").value = tag.objectPositionX || 50;
+  document.getElementById("priceTagObjectPositionY").value = tag.objectPositionY || 50;
+}
+
+async function updateSelectedPriceTag(field, value) {
+  if (!priceTags.length) return;
+
+  const numericFields = [
+    "price",
+    "nameFont",
+    "typeFont",
+    "sizeFont",
+    "priceFont",
+    "itemNoFont",
+    "sloganFont",
+    "objectZoom",
+    "objectPositionX",
+    "objectPositionY"
+  ];
+
+  priceTags[selectedPriceTagIndex][field] = numericFields.includes(field)
+    ? Number(value || 0)
+    : value;
+
+  if (field === "imageUrl") {
+    priceTags[selectedPriceTagIndex].imageSource = "url";
+  }
+  
+  if (field === "productUrl") {
+    await generatePriceTagQR(selectedPriceTagIndex);
+  }
+
+  renderPriceTagPreview();
+}
+
+function generatePriceTagQR(index) {
+  const tag = priceTags[index];
+
+  if (!tag.productUrl || !tag.productUrl.trim()) {
+    tag.qrDataUrl = "";
+    return;
+  }
+
+  tag.qrDataUrl =
+    "https://api.qrserver.com/v1/create-qr-code/?size=140x140&data=" +
+    encodeURIComponent(tag.productUrl.trim());
+}
+
+function closePriceElementEditor() {
+  document.getElementById("priceElementEditor").style.display = "none";
+}
+  
+function showSelectedPriceTagSuggestions(query) {
+  if (!priceTags.length) return;
+
+  priceTags[selectedPriceTagIndex].productName = query;
+  document.getElementById("priceTagProductName").value = query;
+
+  const box = document.getElementById("selectedPriceTagSuggestions");
+  box.innerHTML = "";
+
+  const search = String(query || "").toLowerCase().trim();
+
+  if (!search) {
+    box.style.display = "none";
+    renderPriceTagPreview();
+    return;
+  }
+
+  const matches = inventory.filter(item =>
+    String(item.itemNo || "").toLowerCase().includes(search) ||
+    String(item.description || "").toLowerCase().includes(search)
+  ).slice(0, 20);
+
+  if (!matches.length) {
+    box.style.display = "none";
+    return;
+  }
+
+  matches.forEach(item => {
+    const div = document.createElement("div");
+    div.className = "price-tag-suggestion-item";
+    div.textContent = `${item.itemNo} - ${item.description}`;
+    div.onmousedown = e => {
+      e.preventDefault();
+      selectPriceTagProduct(item);
+    };
+    box.appendChild(div);
+  });
+
+  box.style.display = "block";
+}
+  
+
+function renderPriceTagEditors() {
+  const container = document.getElementById("priceTagEditors");
+  container.innerHTML = "";
+
+  priceTags.forEach((tag, index) => {
+    const div = document.createElement("div");
+    div.className = "price-tag-editor";
+
+    div.innerHTML = `
+      <h3>Price Tag ${index + 1}</h3>
+
+      <label>Search Product</label>
+      <div class="price-tag-search-wrap">
+        <input 
+          value="${tag.productName || ""}"
+          placeholder="Search by description or item no..."
+          oninput="showPriceTagSuggestions(${index}, this.value)"
+          autocomplete="off"
+        />
+        <div id="priceTagSuggestions-${index}" class="price-tag-suggestions"></div>
+      </div>
+
+      <label>Item No.</label>
+      <input class="readonly-field" value="${tag.itemNo || ""}" readonly />
+
+      <label>Product Name</label>
+      <input value="${tag.productName || ""}" oninput="updatePriceTag(${index}, 'productName', this.value)" />
+
+      <label>Product Type</label>
+      <input value="${tag.productType || ""}" oninput="updatePriceTag(${index}, 'productType', this.value)" />
+
+      <label>Product Size</label>
+      <input value="${tag.productSize || ""}" oninput="updatePriceTag(${index}, 'productSize', this.value)" />
+
+      <label>Price</label>
+      <input type="number" step="0.01" value="${tag.price || 0}" oninput="updatePriceTag(${index}, 'price', this.value)" />
+
+      <label>Image URL</label>
+      <input value="${tag.imageUrl || ""}" oninput="updatePriceTag(${index}, 'imageUrl', this.value)" />
+
+      <label>Product Website URL</label>
+      <input value="${tag.productUrl || ""}" oninput="updatePriceTag(${index}, 'productUrl', this.value)" />
+
+      <label>Optional Slogan</label>
+      <input value="${tag.slogan || ""}" oninput="updatePriceTag(${index}, 'slogan', this.value)" />
+
+      <div class="row">
+        <div>
+          <label>Slogan Background</label>
+          <input type="color" value="${tag.sloganBg}" oninput="updatePriceTag(${index}, 'sloganBg', this.value)" />
+        </div>
+
+        <div>
+          <label>Slogan Text Color</label>
+          <input type="color" value="${tag.sloganColor}" oninput="updatePriceTag(${index}, 'sloganColor', this.value)" />
+        </div>
+      </div>
+
+      <h4>Font Sizes</h4>
+      
+      <div class="row">
+        <div>
+          <label>Product Name Font</label>
+          <input type="number" value="${tag.nameFont}" oninput="updatePriceTag(${index}, 'nameFont', this.value)" />
+        </div>
+      
+        <div>
+          <label>Product Type Font</label>
+          <input type="number" value="${tag.typeFont}" oninput="updatePriceTag(${index}, 'typeFont', this.value)" />
+        </div>
+      </div>
+      
+      <div class="row">
+        <div>
+          <label>Product Size Font</label>
+          <input type="number" value="${tag.sizeFont}" oninput="updatePriceTag(${index}, 'sizeFont', this.value)" />
+        </div>
+      
+        <div>
+          <label>Price Font</label>
+          <input type="number" value="${tag.priceFont}" oninput="updatePriceTag(${index}, 'priceFont', this.value)" />
+        </div>
+      </div>
+      
+      <div class="row">
+        <div>
+          <label>Item No. Font</label>
+          <input type="number" value="${tag.itemNoFont}" oninput="updatePriceTag(${index}, 'itemNoFont', this.value)" />
+        </div>
+      
+        <div>
+          <label>Slogan Font</label>
+          <input type="number" value="${tag.sloganFont}" oninput="updatePriceTag(${index}, 'sloganFont', this.value)" />
+        </div>
+      </div>
+    `;
+
+    container.appendChild(div);
+  });
+}
+
+function showPriceTagSuggestions(index, query) {
+  priceTags[index].productName = query;
+
+  const box = document.getElementById(`priceTagSuggestions-${index}`);
+  box.innerHTML = "";
+
+  const search = String(query || "").toLowerCase().trim();
+
+  if (!search) {
+    box.style.display = "none";
+    renderPriceTagPreview();
+    return;
+  }
+
+  const matches = inventory.filter(item =>
+    String(item.itemNo || "").toLowerCase().includes(search) ||
+    String(item.description || "").toLowerCase().includes(search)
+  ).slice(0, 20);
+
+  if (!matches.length) {
+    box.style.display = "none";
+    return;
+  }
+
+  matches.forEach(item => {
+    const div = document.createElement("div");
+    div.className = "price-tag-suggestion-item";
+    div.textContent = `${item.itemNo} - ${item.description}`;
+    div.onmousedown = e => {
+      e.preventDefault();
+      selectPriceTagProduct(index, item);
+    };
+    box.appendChild(div);
+  });
+
+  box.style.display = "block";
+}
+
+function selectPriceTagProduct(item) {
+  const tag = priceTags[selectedPriceTagIndex];
+
+  tag.itemNo = item.itemNo || "";
+  tag.productName = item.description || "";
+  tag.price = Number(item.basePrice || 0);
+
+  document.getElementById("selectedPriceTagSuggestions").style.display = "none";
+
+  loadSelectedPriceTagEditor();
+  renderPriceTagPreview();
+}
+
+function uploadPriceTagImage(file) {
+  if (!file || !priceTags.length) return;
+
+  const reader = new FileReader();
+
+  reader.onload = function(e) {
+    const tag = priceTags[selectedPriceTagIndex];
+
+    tag.imageUrl = e.target.result;
+    tag.imageSource = "upload";
+
+    document.getElementById("priceTagImageUrl").value = "";
+    renderPriceTagPreview();
+  };
+
+  reader.readAsDataURL(file);
+}
+
+function updatePriceTag(index, field, value) {
+  const numericFields = [
+    "price",
+    "nameFont",
+    "typeFont",
+    "sizeFont",
+    "priceFont",
+    "itemNoFont",
+    "sloganFont"
+  ];
+
+  if (numericFields.includes(field)) {
+    priceTags[index][field] = Number(value || 0);
+  } else {
+    priceTags[index][field] = value;
+  }
+
+  renderPriceTagPreview();
+}
+
+function updateProductUrlForSelectedTag(value) {
+  if (!priceTags.length) return;
+
+  priceTags[selectedPriceTagIndex].productUrl = value;
+  generatePriceTagQR(selectedPriceTagIndex);
+  renderPriceTagPreview();
+}
+
+async function loadPriceTagSettings() {
+  try {
+    const response = await fetch(`${SCRIPT_URL}?action=getPriceTagSettings`);
+    const result = await response.json();
+
+    if (result.success) {
+      priceTagSettings = result.settings || {};
+    }
+  } catch {
+    console.warn("Could not load price tag settings.");
+  }
+}
+
+async function saveSelectedPriceTagSettings() {
+  const btn = document.getElementById("saveTagSettingsBtn");
+  const spinner = document.getElementById("saveTagSettingsSpinner");
+  
+  btn.disabled = true;
+  spinner.style.display = "inline-block";
+  
+  if (!priceTags.length) return;
+
+  const tag = priceTags[selectedPriceTagIndex];
+
+  if (!tag.itemNo) {
+    alert("Please select a product before saving tag settings.");
+    return;
+  }
+
+  try {
+    const response = await fetch(SCRIPT_URL, {
+      method: "POST",
+      body: JSON.stringify({
+        action: "savePriceTagSettings",
+        settings: {
+          itemNo: tag.itemNo,
+          imageUrl: tag.imageSource === "upload" ? "" : tag.imageUrl,
+          objectPositionX: tag.objectPositionX || 50,
+          objectPositionY: tag.objectPositionY || 50,
+          objectZoom: tag.objectZoom || 100,
+          productName: tag.productName,
+          productType: tag.productType,
+          productSize: tag.productSize,
+          productUrl: tag.productUrl,
+          nameFont: tag.nameFont,
+          typeFont: tag.typeFont,
+          sizeFont: tag.sizeFont,
+          priceFont: tag.priceFont,
+          itemNoFont: tag.itemNoFont,
+          sloganFont: tag.sloganFont
+        }
+      })
+    });
+
+    const result = await response.json();
+
+    if (result.success) {
+      alert(result.message);
+      await loadPriceTagSettings();
+    } else {
+      alert(result.message);
+    }
+  } catch {
+    alert("Could not save price tag settings.");
+  }
+  finally {
+    btn.disabled = false;
+    spinner.style.display = "none";
+  }
+}
+
+function loadSavedPriceTagSettings() {
+  if (!priceTags.length) return;
+
+  const tag = priceTags[selectedPriceTagIndex];
+
+  if (!tag.itemNo) {
+    alert("Please select a product first.");
+    return;
+  }
+
+  const saved = priceTagSettings[tag.itemNo];
+
+  if (!saved) {
+    alert("No saved settings found for this item.");
+    return;
+  }
+
+  tag.imageUrl = saved.imageUrl || "";
+  tag.objectPositionX = saved.objectPositionX || 50;
+  tag.objectPositionY = saved.objectPositionY || 50;
+  tag.objectZoom = saved.objectZoom || 100;
+
+  tag.productName = saved.productName || tag.productName;
+  tag.productType = saved.productType || "";
+  tag.productSize = saved.productSize || "";
+  tag.productUrl = saved.productUrl || "";
+
+  tag.nameFont = saved.nameFont || 28;
+  tag.typeFont = saved.typeFont || 18;
+  tag.sizeFont = saved.sizeFont || 18;
+  tag.priceFont = saved.priceFont || 48;
+  tag.itemNoFont = saved.itemNoFont || 14;
+  tag.sloganFont = saved.sloganFont || 18;
+
+  generatePriceTagQR(selectedPriceTagIndex);
+
+  loadSelectedPriceTagEditor();
+  renderPriceTagPreview();
+
+  alert("Saved settings loaded successfully.");
+}
+  
+function renderPriceTagPreview() {
+  const preview = document.getElementById("priceTagPreview");
+  preview.innerHTML = "";
+
+  if (!priceTags.length) {
+    preview.innerHTML = `<p class="muted">Select how many tags to create.</p>`;
+    return;
+  }
+
+  priceTags.forEach((tag, index) => {
+    const card = document.createElement("div");
+    card.className = "price-preview-card";
+
+    card.innerHTML = `
+      <div class="price-preview-image price-clickable" onclick="openFloatingEditor(${index}, 'image', event)">
+        ${
+          tag.imageUrl
+            ? `<img 
+                src="${tag.imageUrl}" 
+                alt="Bottle Image"
+                style="
+                  transform:
+                    translate(
+                      calc(-50% + ${(Number(tag.objectPositionX || 50) - 50) * 2}px),
+                      calc(-50% + ${(Number(tag.objectPositionY || 50) - 50) * 2}px)
+                    )
+                    scale(${Number(tag.objectZoom || 100) / 100});
+                "
+              >`
+            : `<span class="muted" style="position:absolute; top:50%; left:50%; transform:translate(-50%, -50%);">
+                Bottle Image
+              </span>`
+        }
+      </div>
+
+      <div class="price-preview-info">
+        <div class="price-preview-name price-clickable" onclick="openFloatingEditor(${index}, 'name', event)" style="font-size:${tag.nameFont}px;">
+          ${tag.productName || "Product Name"}
+        </div>
+
+        <div class="price-preview-type price-clickable" onclick="openFloatingEditor(${index}, 'type', event)" style="font-size:${tag.typeFont}px;">
+          ${tag.productType || "Product Type"}
+        </div>
+
+        <div class="price-preview-size price-clickable" onclick="openFloatingEditor(${index}, 'size', event)" style="font-size:${tag.sizeFont}px;">
+          ${tag.productSize || "Product Size"}
+        </div>
+
+        <div class="price-preview-price price-clickable" onclick="openFloatingEditor(${index}, 'price', event)" style="font-size:${tag.priceFont}px;">
+          $${Number(tag.price || 0).toFixed(2)}
+        </div>
+
+        ${
+          tag.qrDataUrl
+            ? `<img class="price-preview-qr price-clickable" onclick="openFloatingEditor(${index}, 'qr', event)" src="${tag.qrDataUrl}">`
+            : `<div class="price-preview-qr price-clickable" onclick="openFloatingEditor(${index}, 'qr', event)">QR<br>Code</div>`
+        }
+
+        ${
+          tag.presetImageUrl
+            ? `<img 
+                class="price-preview-preset-image ${tag.slogan ? '' : 'no-slogan'}" //class="price-preview-preset-image price-clickable" 
+                onclick="openFloatingEditor(${index}, 'presetImage', event)"
+                src="${tag.presetImageUrl}" 
+                alt="Preset Image"
+              >`
+            : ""
+        }
+          
+        ${
+          tag.slogan
+            ? `<div class="price-preview-slogan price-clickable"
+                  onclick="openFloatingEditor(${index}, 'slogan', event)"
+                  style="
+                    background:${tag.sloganBg};
+                    color:${tag.sloganColor};
+                    font-size:${tag.sloganFont}px;
+                  ">
+                  ${tag.slogan}
+               </div>`
+            : `<div class="price-preview-slogan price-clickable" onclick="openFloatingEditor(${index}, 'slogan', event)">
+                Slogan
+               </div>`
+        }
+
+        <div class="price-preview-itemno price-clickable" onclick="openFloatingEditor(${index}, 'itemNo', event)" style="font-size:${tag.itemNoFont}px;">
+          ${tag.itemNo || ""}
+        </div>
+      </div>
+    `;
+
+    preview.appendChild(card);
+  });
+}
+
+function openPriceElementEditor(index, element) {
+  selectedPriceTagIndex = index;
+  selectedPriceElement = element;
+
+  const tag = priceTags[index];
+  const editor = document.getElementById("priceElementEditor");
+  const title = document.getElementById("priceElementEditorTitle");
+  const body = document.getElementById("priceElementEditorBody");
+
+  editor.style.display = "block";
+  title.textContent = `Edit Tag ${index + 1}: ${element}`;
+
+  if (element === "image") {
+    body.innerHTML = `
+      <div class="price-element-editor-grid">
+        <div>
+          <label>Image URL</label>
+          <input value="${tag.imageUrl || ""}" oninput="updateVisualTag('imageUrl', this.value)" />
+        </div>
+
+        <div>
+          <label>Upload Product Image</label>
+          <input type="file" accept="image/*" onchange="uploadVisualPriceTagImage(this.files[0])" />
+        </div>
+
+        <div>
+          <label>Image Zoom</label>
+          <input type="range" min="50" max="200" value="${tag.objectZoom}" oninput="updateVisualTag('objectZoom', this.value)" />
+        </div>
+
+        <div>
+          <label>Horizontal Position</label>
+          <input type="range" min="0" max="100" value="${tag.objectPositionX}" oninput="updateVisualTag('objectPositionX', this.value)" />
+        </div>
+
+        <div>
+          <label>Vertical Position</label>
+          <input type="range" min="0" max="100" value="${tag.objectPositionY}" oninput="updateVisualTag('objectPositionY', this.value)" />
+        </div>
+      </div>
+    `;
+    return;
+  }
+
+  if (element === "qr") {
+    body.innerHTML = `
+      <label>Product Website URL</label>
+      <input value="${tag.productUrl || ""}" oninput="updateVisualProductUrl(this.value)" />
+    `;
+    return;
+  }
+
+  if (element === "slogan") {
+    body.innerHTML = `
+      <div class="price-element-editor-grid">
+        <div>
+          <label>Slogan Text</label>
+          <input value="${tag.slogan || ""}" oninput="updateVisualTag('slogan', this.value)" />
+        </div>
+
+        <div>
+          <label>Slogan Font Size</label>
+          <input type="number" value="${tag.sloganFont}" oninput="updateVisualTag('sloganFont', this.value)" />
+        </div>
+
+        <div>
+          <label>Background Color</label>
+          <input type="color" value="${tag.sloganBg}" oninput="updateVisualTag('sloganBg', this.value)" />
+        </div>
+
+        <div>
+          <label>Text Color</label>
+          <input type="color" value="${tag.sloganColor}" oninput="updateVisualTag('sloganColor', this.value)" />
+        </div>
+      </div>
+    `;
+    return;
+  }
+
+  const fieldMap = {
+    name: ["productName", "nameFont", "Product Name"],
+    type: ["productType", "typeFont", "Product Type"],
+    size: ["productSize", "sizeFont", "Product Size"],
+    price: ["price", "priceFont", "Price"],
+    itemNo: ["itemNo", "itemNoFont", "Item No."]
+  };
+
+  const [textField, fontField, label] = fieldMap[element];
+
+  body.innerHTML = `
+    <div class="price-element-editor-grid">
+      <div>
+        <label>${label}</label>
+        <input value="${tag[textField] || ""}" oninput="updateVisualTag('${textField}', this.value)" />
+      </div>
+
+      <div>
+        <label>Font Size</label>
+        <input type="number" value="${tag[fontField]}" oninput="updateVisualTag('${fontField}', this.value)" />
+      </div>
+    </div>
+  `;
+}
+
+function updateVisualTag(field, value) {
+  const numericFields = [
+    "price",
+    "nameFont",
+    "typeFont",
+    "sizeFont",
+    "priceFont",
+    "itemNoFont",
+    "sloganFont",
+    "objectZoom",
+    "objectPositionX",
+    "objectPositionY"
+  ];
+
+  priceTags[selectedPriceTagIndex][field] = numericFields.includes(field)
+    ? Number(value || 0)
+    : value;
+
+  if (field === "imageUrl") {
+    priceTags[selectedPriceTagIndex].imageSource = "url";
+  }
+
+  renderPriceTagPreview();
+}
+
+function updateVisualProductUrl(value) {
+  const tag = priceTags[selectedPriceTagIndex];
+
+  tag.productUrl = value;
+  generatePriceTagQR(selectedPriceTagIndex);
+  renderPriceTagPreview();
+}
+
+function uploadVisualPriceTagImage(file) {
+  if (!file) return;
+
+  const reader = new FileReader();
+
+  reader.onload = function(e) {
+    const tag = priceTags[selectedPriceTagIndex];
+    tag.imageUrl = e.target.result;
+    tag.imageSource = "upload";
+    renderPriceTagPreview();
+  };
+
+  reader.readAsDataURL(file);
+}
+
+function openFloatingEditor(index, element, event) {
+  selectedPriceTagIndex = index;
+  selectedPriceElement = element;
+
+  const panel = document.getElementById("floatingPriceEditor");
+  const title = document.getElementById("floatingEditorTitle");
+  const body = document.getElementById("floatingPriceEditorBody");
+
+  panel.style.display = "block";
+
+  panel.style.left = Math.min(window.innerWidth - 340, event.clientX + 16) + "px";
+  panel.style.top = Math.min(window.innerHeight - 420, event.clientY + 16) + "px";
+
+  const tag = priceTags[index];
+
+  title.textContent = `Edit ${element}`;
+
+  if (element === "name") {
+    body.innerHTML = `
+      <label>Product Name</label>
+      <input value="${tag.productName || ""}" 
+             oninput="updateVisualTag('productName', this.value)">
+
+      <label>Font Size</label>
+      <input type="number"
+             value="${tag.nameFont}"
+             oninput="updateVisualTag('nameFont', this.value)">
+    `;
+    return;
+  }
+
+  if (element === "type") {
+    body.innerHTML = `
+      <label>Product Type</label>
+      <input value="${tag.productType || ""}" 
+             oninput="updateVisualTag('productType', this.value)">
+
+      <label>Font Size</label>
+      <input type="number"
+             value="${tag.typeFont}"
+             oninput="updateVisualTag('typeFont', this.value)">
+    `;
+    return;
+  }
+
+  if (element === "size") {
+    body.innerHTML = `
+      <label>Product Size</label>
+      <input value="${tag.productSize || ""}" 
+             oninput="updateVisualTag('productSize', this.value)">
+
+      <label>Font Size</label>
+      <input type="number"
+             value="${tag.sizeFont}"
+             oninput="updateVisualTag('sizeFont', this.value)">
+    `;
+    return;
+  }
+
+  if (element === "price") {
+    body.innerHTML = `
+      <label>Price</label>
+      <input type="number"
+             step="0.01"
+             value="${tag.price}"
+             oninput="updateVisualTag('price', this.value)">
+
+      <label>Font Size</label>
+      <input type="number"
+             value="${tag.priceFont}"
+             oninput="updateVisualTag('priceFont', this.value)">
+    `;
+    return;
+  }
+
+  if (element === "itemNo") {
+    body.innerHTML = `
+      <label>Item No.</label>
+      <input value="${tag.itemNo || ""}" 
+             oninput="updateVisualTag('itemNo', this.value)">
+
+      <label>Font Size</label>
+      <input type="number"
+             value="${tag.itemNoFont}"
+             oninput="updateVisualTag('itemNoFont', this.value)">
+    `;
+    return;
+  }
+
+  if (element === "slogan") {
+    body.innerHTML = `
+      <label>Slogan</label>
+      <input value="${tag.slogan || ""}" 
+             oninput="updateVisualTag('slogan', this.value)">
+
+      <label>Slogan Font</label>
+      <input type="number"
+             value="${tag.sloganFont}"
+             oninput="updateVisualTag('sloganFont', this.value)">
+
+      <label>Background Color</label>
+      <input type="color"
+             value="${tag.sloganBg}"
+             oninput="updateVisualTag('sloganBg', this.value)">
+
+      <label>Text Color</label>
+      <input type="color"
+             value="${tag.sloganColor}"
+             oninput="updateVisualTag('sloganColor', this.value)">
+    `;
+    return;
+  }
+
+  if (element === "qr") {
+    body.innerHTML = `
+      <label>Product Website URL</label>
+      <input value="${tag.productUrl || ""}" 
+             oninput="updateVisualProductUrl(this.value)">
+    `;
+    return;
+  }
+
+  if (element === "image") {
+    body.innerHTML = `
+      <label>Image URL</label>
+      <input value="${tag.imageUrl || ""}" 
+             oninput="updateVisualTag('imageUrl', this.value)">
+
+      <label>Upload Image</label>
+      <input type="file"
+             accept="image/*"
+             onchange="uploadVisualPriceTagImage(this.files[0])">
+
+      <label>Zoom</label>
+      <input type="range"
+             min="50"
+             max="200"
+             value="${tag.objectZoom}"
+             oninput="updateVisualTag('objectZoom', this.value)">
+
+      <label>Horizontal Position</label>
+      <input type="range"
+             min="0"
+             max="100"
+             value="${tag.objectPositionX}"
+             oninput="updateVisualTag('objectPositionX', this.value)">
+
+      <label>Vertical Position</label>
+      <input type="range"
+             min="0"
+             max="100"
+             value="${tag.objectPositionY}"
+             oninput="updateVisualTag('objectPositionY', this.value)">
+    `;
+  }
+}
+
+function closeFloatingPriceEditor() {
+  document.getElementById("floatingPriceEditor").style.display = "none";
+}
+  
+function printPriceTags() {
+  if (!priceTags.length) {
+    alert("Please generate at least one price tag.");
+    return;
+  }
+
+  const printWindow = window.open("", "_blank");
+
+  const html = `
+    <html>
+    <head>
+      <title>Print Price Tags</title>
+
+      <style>
+        body {
+          margin: 0;
+          padding: 0;
+          font-family: Arial, sans-serif;
+        }
+
+        .print-sheet {
+          width: 14in;
+          height: 8.5in;
+          display: grid;
+          grid-template-columns: repeat(2, 7in);
+          grid-template-rows: repeat(2, 4.25in);
+        }
+
+        .price-preview-card {
+          width: 7in;
+          height: 4.25in;
+          border: none;
+          background: white;
+          box-sizing: border-box;
+          overflow: hidden;
+          position: relative;
+          display: grid;
+          grid-template-columns: 2.1in 4.9in;
+        }
+
+        .price-preview-image {
+          background: #f1f1f1;
+          overflow: hidden;
+          position: relative;
+        }
+
+        .price-preview-image img {
+          position: absolute;
+          left: 50%;
+          top: 50%;
+          max-width: 100%;
+          max-height: 100%;
+          object-fit: contain;
+          transform-origin: center center;
+        }
+
+        .price-preview-info {
+          position: relative;
+          padding: 10px 14px;
+          overflow: hidden;
+        }
+
+        .price-preview-name { 
+          font-family: Arial, sans-serif; 
+          font-weight: bold;
+        },
+        .price-preview-type { 
+          font-family: Arial, sans-serif; 
+          font-weight: 700;
+        },
+        .price-preview-size {
+          font-family: Arial, sans-serif;
+          text-align: left;
+          line-height: 1.1;
+          font-weight: 700;
+          overflow-wrap: break-word;
+        }
+
+        .price-preview-price {
+          font-family: Impact, Haettenschweiler, 'Arial Narrow Bold', sans-serif;
+          margin-top: 18px;
+          font-weight: bold;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          text-align: center;
+          min-height: 1.6in;
+        }
+
+        .price-preview-qr {
+          position: absolute;
+          right: 14px;
+          bottom: 38px;
+          width: 0.65in;
+          height: 0.65in;
+        }
+
+        .price-preview-preset-image {
+          position: absolute;
+          left: 14px;
+          bottom: 52px;
+          width: 0.62in;
+          height: 0.48in;
+          object-fit: contain;
+        }
+
+        .price-preview-preset-image.no-slogan {
+          bottom: 16px;
+          width: 1.15in;
+          height: 0.82in;
+        }
+
+        .price-preview-slogan {
+          position: absolute;
+          left: 14px;
+          right: 1.05in;
+          bottom: 12px;
+          padding: 4px 8px;
+          font-family: Arial, sans-serif;
+          font-weight: bold;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          text-align: center;
+        }
+
+        .price-preview-itemno {
+          font-family: Arial, sans-serif;
+          position: absolute;
+          bottom: 12px;
+          right: 16px;
+          font-style: italic;
+          color: #333;
+        }
+
+        @page {
+          size: legal landscape;
+          margin: 0;
+        }
+      </style>
+    </head>
+
+    <body>
+      <div class="print-sheet">
+        ${generatePrintTagHTML()}
+      </div>
+    </body>
+    </html>
+  `;
+
+  printWindow.document.write(html);
+  printWindow.document.close();
+
+  printWindow.onload = function() {
+    printWindow.focus();
+    printWindow.print();
+  };
+}
+
+function generatePrintTagHTML() {
+  let html = "";
+
+  priceTags.forEach(tag => {
+    html += `
+      <div class="price-preview-card">
+        <div class="price-preview-image">
+          ${
+            tag.imageUrl
+              ? `<img 
+                  src="${tag.imageUrl}" 
+                  style="
+                    transform:
+                      translate(
+                        calc(-50% + ${(Number(tag.objectPositionX || 50) - 50) * 2}px),
+                        calc(-50% + ${(Number(tag.objectPositionY || 50) - 50) * 2}px)
+                      )
+                      scale(${Number(tag.objectZoom || 100) / 100});
+                  "
+                >`
+              : ""
+          }
+        </div>
+
+        <div class="price-preview-info">
+          <div class="price-preview-name" style="font-size:${tag.nameFont}px;">
+            ${tag.productName || ""}
+          </div>
+
+          <div class="price-preview-type" style="font-size:${tag.typeFont}px;">
+            ${tag.productType || ""}
+          </div>
+
+          <div class="price-preview-size" style="font-size:${tag.sizeFont}px;">
+            ${tag.productSize || ""}
+          </div>
+
+          <div class="price-preview-price" style="font-size:${tag.priceFont}px;">
+            $${Number(tag.price || 0).toFixed(2)}
+          </div>
+
+          ${
+            tag.qrDataUrl
+              ? `<img class="price-preview-qr" src="${tag.qrDataUrl}">`
+              : ""
+          }
+
+          ${
+            tag.presetImageUrl
+              ? `<img 
+                  class="price-preview-preset-image ${tag.slogan ? '' : 'no-slogan'}"
+                  src="${tag.presetImageUrl}" 
+                  alt="Preset Image"
+                >`
+              : ""
+          }
+  
+          ${
+            tag.slogan
+              ? `<div class="price-preview-slogan"
+                    style="
+                      background:${tag.sloganBg};
+                      color:${tag.sloganColor};
+                      font-size:${tag.sloganFont}px;
+                    ">
+                    ${tag.slogan}
+                 </div>`
+              : ""
+          }
+
+          <div class="price-preview-itemno"
+               style="font-size:${tag.itemNoFont}px;">
+            ${tag.itemNo || ""}
+          </div>
+        </div>
+      </div>
+    `;
+  });
+
+  return html;
+}
+
+function setupTastingMonthYear() {
+  const monthSelect = document.getElementById("tastingMonth");
+  const yearInput = document.getElementById("tastingYear");
+
+  if (!monthSelect || !yearInput) return;
+
+  const months = [
+    "January", "February", "March", "April", "May", "June",
+    "July", "August", "September", "October", "November", "December"
+  ];
+
+  monthSelect.innerHTML = "";
+
+  months.forEach((month, index) => {
+    const option = document.createElement("option");
+    option.value = index;
+    option.textContent = month;
+    monthSelect.appendChild(option);
+  });
+
+  const today = new Date();
+  monthSelect.value = today.getMonth();
+  yearInput.value = today.getFullYear();
+}
+
+async function saveTasting() {
+  const dateReserved = document.getElementById("tastingDate").value;
+  const timeFrom = document.getElementById("tastingTimeFrom").value;
+  const timeTo = document.getElementById("tastingTimeTo").value;
+  const timeSlot = `${timeFrom} - ${timeTo}`;
+  const products = document.getElementById("tastingProducts").value.trim();
+  const notes = document.getElementById("tastingNotes").value.trim();
+  const imageUrl = document.getElementById("tastingImageUrl").value.trim();
+
+  if (!dateReserved || !timeFrom || !timeTo || !products) {
+    showMessage("tastingMessage", "Date Reserved, Time Slot, and Product(s) are required.", "error");
+    return;
+  }
+
+  try {
+    showMessage("tastingMessage", "Booking tasting...", "");
+
+    const response = await fetch(SCRIPT_URL, {
+      method: "POST",
+      body: JSON.stringify({
+        action: "saveTasting",
+        dateReserved,
+        timeSlot,
+        imageUrl,
+        products,
+        notes,
+        createdBy: currentUser.name || currentUser.username || ""
+      })
+    });
+
+    const result = await response.json();
+
+    if (result.success) {
+      showMessage("tastingMessage", result.message, "success");
+
+      document.getElementById("tastingDate").value = "";
+      document.getElementById("tastingTimeFrom").value = "";
+      document.getElementById("tastingTimeTo").value = "";
+      document.getElementById("tastingProducts").value = "";
+      document.getElementById("tastingNotes").value = "";
+      document.getElementById("tastingImageUrl").value = "";
+
+      await loadTastings();
+    } else {
+      showMessage("tastingMessage", result.message, "error");
+    }
+
+  } catch {
+    showMessage("tastingMessage", "Could not book tasting.", "error");
+  }
+}
+
+async function loadTastings() {
+  const btn = document.getElementById("refreshTastingsBtn");
+  const spinner = document.getElementById("refreshTastingsSpinner");
+
+  try {
+    if (btn) btn.disabled = true;
+    if (spinner) spinner.style.display = "inline-block";
+
+    const response = await fetch(`${SCRIPT_URL}?action=getTastings`);
+    const result = await response.json();
+
+    if (result.success) {
+      tastingsData = result.tastings || [];
+      renderTastings();
+    } else {
+      showMessage("tastingMessage", result.message, "error");
+    }
+
+  } catch {
+    showMessage("tastingMessage", "Could not load tastings.", "error");
+  } finally {
+    if (btn) btn.disabled = false;
+    if (spinner) spinner.style.display = "none";
+  }
+}
+
+function renderTastings() {
+  if (tastingViewMode === "calendar") {
+    renderTastingCalendar();
+  } else {
+    renderTastingList();
+  }
+}
+
+function getFilteredTastingsForSelectedMonth() {
+  const month = Number(document.getElementById("tastingMonth").value);
+  const year = Number(document.getElementById("tastingYear").value);
+
+  return tastingsData.filter(tasting => {
+    const key = normalizeDateKey(tasting.dateReserved);
+      if (!key) return false;
+      
+      const [y, m] = key.split("-").map(Number);
+      return y === year && m - 1 === month;
+  });
+}
+
+function renderTastingList() {
+  const tbody = document.getElementById("tastingTableBody");
+  if (!tbody) return;
+
+  const filtered = getFilteredTastingsForSelectedMonth();
+
+  tbody.innerHTML = "";
+
+  if (!filtered.length) {
+    tbody.innerHTML = `<tr><td colspan="5">No tastings found for this month.</td></tr>`;
+    return;
+  }
+
+  filtered
+    .sort((a, b) => new Date(a.dateReserved) - new Date(b.dateReserved))
+    .forEach(tasting => {
+      const tr = document.createElement("tr");
+
+      tr.innerHTML = `
+        <td>${formatDateOnly(tasting.dateReserved)}</td>
+        <td>${tasting.timeSlot || ""}</td>
+        <td>${tasting.products || ""}</td>
+        <td>${tasting.notes || ""}</td>
+        <td>${tasting.createdBy || ""}</td>
+        <td>
+          <button class="danger" onclick="deleteTasting(${tasting.rowNumber})">
+            Delete
+          </button>
+        </td>
+      `;
+
+      tbody.appendChild(tr);
+    });
+}
+
+function renderTastingCalendar() {
+  const calendar = document.getElementById("tastingCalendar");
+  if (!calendar) return;
+
+  const month = Number(document.getElementById("tastingMonth").value);
+  const year = Number(document.getElementById("tastingYear").value);
+
+  const filtered = getFilteredTastingsForSelectedMonth();
+
+  const firstDay = new Date(year, month, 1);
+  const lastDay = new Date(year, month + 1, 0);
+
+  const startDay = firstDay.getDay();
+  const daysInMonth = lastDay.getDate();
+
+  const dayNames = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+
+  calendar.innerHTML = "";
+
+  dayNames.forEach(day => {
+    const div = document.createElement("div");
+    div.className = "tasting-day-header";
+    div.textContent = day;
+    calendar.appendChild(div);
+  });
+
+  for (let i = 0; i < startDay; i++) {
+    const blank = document.createElement("div");
+    blank.className = "tasting-day";
+    calendar.appendChild(blank);
+  }
+
+  for (let day = 1; day <= daysInMonth; day++) {
+    const cell = document.createElement("div");
+    cell.className = "tasting-day";
+
+    const dateStr = `${year}-${String(month + 1).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
+
+    const events = filtered.filter(tasting => normalizeDateKey(tasting.dateReserved) === dateStr);
+
+    cell.innerHTML = `<div class="tasting-day-number">${day}</div>`;
+
+    events.forEach(event => {
+      const eventDiv = document.createElement("div");
+      eventDiv.className = "tasting-event";
+      eventDiv.innerHTML = `
+        <strong>${event.timeSlot || ""}</strong><br>
+        ${event.products || ""}
+      `;
+      cell.appendChild(eventDiv);
+    });
+
+    calendar.appendChild(cell);
+  }
+}
+
+function showTastingListView() {
+  tastingViewMode = "list";
+  document.getElementById("tastingListView").style.display = "block";
+  document.getElementById("tastingCalendarView").style.display = "none";
+  renderTastingList();
+}
+
+function showTastingCalendarView() {
+  tastingViewMode = "calendar";
+  document.getElementById("tastingListView").style.display = "none";
+  document.getElementById("tastingCalendarView").style.display = "block";
+  renderTastingCalendar();
+}
+
+function formatDateOnly(value) {
+  if (!value) return "";
+
+  let date;
+
+  if (typeof value === "string" && value.includes("T")) {
+    date = new Date(value);
+  } else {
+    date = new Date(value + "T00:00:00");
+  }
+
+  if (isNaN(date.getTime())) return value;
+
+  return date.toLocaleDateString("en-US", {
+    month: "numeric",
+    day: "numeric",
+    year: "numeric",
+    weekday: "long"
+  });
+}
+
+function populateTastingTimeDropdowns() {
+  const from = document.getElementById("tastingTimeFrom");
+  const to = document.getElementById("tastingTimeTo");
+
+  if (!from || !to) return;
+
+  const times = [];
+
+  for (let hour = 8; hour <= 22; hour++) {
+    for (let min of [0, 30]) {
+      const date = new Date();
+      date.setHours(hour, min, 0, 0);
+
+      times.push(date.toLocaleTimeString("en-US", {
+        hour: "numeric",
+        minute: "2-digit",
+        hour12: true
+      }));
+    }
+  }
+
+  from.innerHTML = `<option value="">Select start time</option>`;
+  to.innerHTML = `<option value="">Select end time</option>`;
+
+  times.forEach(time => {
+    from.innerHTML += `<option value="${time}">${time}</option>`;
+    to.innerHTML += `<option value="${time}">${time}</option>`;
+  });
+}
+
+function normalizeDateKey(value) {
+  if (!value) return "";
+
+  let date;
+
+  if (typeof value === "string" && value.includes("T")) {
+    date = new Date(value);
+  } else {
+    date = new Date(value + "T00:00:00");
+  }
+
+  if (isNaN(date.getTime())) return "";
+
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+
+  return `${year}-${month}-${day}`;
+}
+
+function buildGoogleCalendarLink(tasting) {
+  const location = "32-50 Vernon Boulevard, Queens, NY 11106";
+  const dateKey = normalizeDateKey(tasting.dateReserved);
+
+  const [start, end] = String(tasting.timeSlot || "").split(" - ");
+
+  const startDate = formatGoogleCalendarDate(dateKey, start);
+  const endDate = formatGoogleCalendarDate(dateKey, end);
+
+  const title = `${tasting.products || "Tasting"} Tasting`;
+  const details = tasting.notes || "";
+
+  return "https://calendar.google.com/calendar/render?action=TEMPLATE" +
+    `&text=${encodeURIComponent(title)}` +
+    `&dates=${startDate}/${endDate}` +
+    `&details=${encodeURIComponent(details)}` +
+    `&location=${encodeURIComponent(location)}`;
+}
+
+function buildICSLink(tasting) {
+  const location = "32-50 Vernon Boulevard, Queens, NY 11106";
+  const dateKey = normalizeDateKey(tasting.dateReserved);
+  const [start, end] = String(tasting.timeSlot || "").split(" - ");
+
+  return SCRIPT_URL +
+    `?action=downloadICS` +
+    `&title=${encodeURIComponent((tasting.products || "Tasting") + " Tasting")}` +
+    `&date=${encodeURIComponent(dateKey)}` +
+    `&start=${encodeURIComponent(start || "")}` +
+    `&end=${encodeURIComponent(end || "")}` +
+    `&details=${encodeURIComponent((tasting.notes || "") + "\\nLocation: " + location)}`;
+}
+
+function formatGoogleCalendarDate(dateKey, timeText) {
+  const date = new Date(`${dateKey} ${timeText}`);
+
+  const yyyy = date.getFullYear();
+  const mm = String(date.getMonth() + 1).padStart(2, "0");
+  const dd = String(date.getDate()).padStart(2, "0");
+  const hh = String(date.getHours()).padStart(2, "0");
+  const min = String(date.getMinutes()).padStart(2, "0");
+
+  return `${yyyy}${mm}${dd}T${hh}${min}00`;
+}
+
+function getMonthName(monthIndex) {
+  return [
+    "January", "February", "March", "April", "May", "June",
+    "July", "August", "September", "October", "November", "December"
+  ][monthIndex];
+}
+
+function groupTastingsByDate(tastings) {
+  const grouped = {};
+
+  tastings.forEach(tasting => {
+    const key = normalizeDateKey(tasting.dateReserved);
+    if (!grouped[key]) grouped[key] = [];
+    grouped[key].push(tasting);
+  });
+
+  return grouped;
+}
+
+async function downloadMonthlyTastingPDF() {
+  if (!tastingsData.length) {
+    await loadTastings();
+  }
+
+  const month = Number(document.getElementById("tastingMonth").value);
+  const year = Number(document.getElementById("tastingYear").value);
+
+  const filtered = getFilteredTastingsForSelectedMonth()
+    .sort((a, b) => normalizeDateKey(a.dateReserved).localeCompare(normalizeDateKey(b.dateReserved)));
+
+  if (!filtered.length) {
+    showMessage("tastingMessage", "No tastings found for the selected month.", "error");
+    return;
+  }
+
+  const { jsPDF } = window.jspdf;
+  const pdf = new jsPDF("p", "pt", "letter");
+
+  const margin = 48;
+  let y = 60;
+
+  pdf.setFont("helvetica", "bold");
+  pdf.setFontSize(24);
+  pdf.text(`${getMonthName(month)}'s Tasting`, margin, y);
+
+  y += 32;
+
+  const grouped = groupTastingsByDate(filtered);
+  const dateKeys = Object.keys(grouped).sort();
+
+  dateKeys.forEach(dateKey => {
+    if (y > 700) {
+      pdf.addPage();
+      y = 60;
+    }
+
+    const dateLabel = formatDateOnly(dateKey);
+
+    pdf.setFont("helvetica", "bold");
+    pdf.setFontSize(16);
+    pdf.text(dateLabel, margin, y);
+
+    y += 22;
+
+    grouped[dateKey].forEach(tasting => {
+      if (y > 700) {
+        pdf.addPage();
+        y = 60;
+      }
+
+      const googleLink = buildGoogleCalendarLink(tasting);
+      const icsLink = buildICSLink(tasting);
+
+      pdf.setFont("helvetica", "bold");
+      pdf.setFontSize(13);
+      pdf.text(tasting.products || "Tasting", margin + 18, y);
+
+      y += 17;
+
+      pdf.setFont("helvetica", "normal");
+      pdf.setFontSize(12);
+      pdf.text(tasting.timeSlot || "", margin + 18, y);
+
+      y += 17;
+
+      if (tasting.notes) {
+        pdf.setFontSize(10);
+        pdf.text(`Notes: ${tasting.notes}`, margin + 18, y);
+        y += 15;
+      }
+
+      pdf.setTextColor(31, 94, 255);
+      pdf.setFont("helvetica", "bold");
+      pdf.setFontSize(11);
+
+      pdf.textWithLink("Add to Google Calendar", margin + 18, y, {
+        url: googleLink
+      });
+
+      pdf.textWithLink("Download .ics", margin + 170, y, {
+        url: icsLink
+      });
+
+      pdf.setTextColor(0, 0, 0);
+
+      y += 28;
+    });
+
+    y += 10;
+  });
+
+  pdf.save(`${getMonthName(month).toLowerCase()}-${year}-tastings.pdf`);
+}
+
+function convertToCSVDate(dateReserved, timeText) {
+  const date = new Date(`${normalizeDateKey(dateReserved)} ${timeText}`);
+
+  const yyyy = date.getFullYear();
+  const mm = String(date.getMonth() + 1).padStart(2, "0");
+  const dd = String(date.getDate()).padStart(2, "0");
+
+  const hh = String(date.getHours()).padStart(2, "0");
+  const min = String(date.getMinutes()).padStart(2, "0");
+  const ss = "00";
+
+  return `${yyyy}-${mm}-${dd} ${hh}:${min}:${ss} -0400`;
+}
+
+function downloadTastingsCSV() {
+  const tastings = getFilteredTastingsForSelectedMonth();
+
+  if (!tastings.length) {
+    showMessage("tastingMessage", "No tastings found for selected month.", "error");
+    return;
+  }
+
+  const rows = [];
+
+  rows.push([
+    "Title",
+    "Start Time",
+    "End Time",
+    "Image URL"
+  ]);
+
+  tastings.forEach(tasting => {
+    const parts = String(tasting.timeSlot || "").split(" - ");
+
+    const startTime = parts[0] || "";
+    const endTime = parts[1] || "";
+
+    rows.push([
+      tasting.products || "",
+      convertToCSVDate(tasting.dateReserved, startTime),
+      convertToCSVDate(tasting.dateReserved, endTime),
+      tasting.imageUrl || ""
+    ]);
+  });
+
+  const csvContent = rows.map(row =>
+    row.map(value =>
+      `"${String(value).replace(/"/g, '""')}"`
+    ).join(",")
+  ).join("\n");
+
+  const blob = new Blob([csvContent], {
+    type: "text/csv;charset=utf-8;"
+  });
+
+  const link = document.createElement("a");
+  const url = URL.createObjectURL(blob);
+
+  link.setAttribute("href", url);
+
+  const month = Number(document.getElementById("tastingMonth").value);
+  const year = Number(document.getElementById("tastingYear").value);
+
+  link.setAttribute(
+    "download",
+    `${getMonthName(month).toLowerCase()}-${year}-tastings.csv`
+  );
+
+  link.style.visibility = "hidden";
+
+  document.body.appendChild(link);
+
+  link.click();
+
+  document.body.removeChild(link);
+}
+
+async function deleteTasting(rowNumber) {
+  if (!confirm("Are you sure you want to delete this tasting?")) return;
+
+  try {
+    showMessage("tastingMessage", "Deleting tasting...", "");
+
+    const response = await fetch(SCRIPT_URL, {
+      method: "POST",
+      body: JSON.stringify({
+        action: "deleteTasting",
+        rowNumber
+      })
+    });
+
+    const result = await response.json();
+
+    if (result.success) {
+      showMessage("tastingMessage", result.message, "success");
+      await loadTastings();
+    } else {
+      showMessage("tastingMessage", result.message, "error");
+    }
+
+  } catch {
+    showMessage("tastingMessage", "Could not delete tasting.", "error");
+  }
+}
+
+async function uploadRecountInventoryFile() {
+  const fileInput = document.getElementById("recountInventoryFile");
+  const file = fileInput.files[0];
+
+  if (!file) {
+    showMessage("recountInventoryUploadMessage", "Please choose a Recount Inventory file first.", "error");
+    return;
+  }
+
+  if (currentUser.role !== "Manager") {
+    showMessage("recountInventoryUploadMessage", "Only managers can upload Recount Inventory.", "error");
+    return;
+  }
+
+  try {
+    showMessage("recountInventoryUploadMessage", "Reading Recount Inventory file...", "");
+
+    const data = await file.arrayBuffer();
+    const workbook = XLSX.read(data, { type: "array" });
+    const firstSheetName = workbook.SheetNames[0];
+    const worksheet = workbook.Sheets[firstSheetName];
+
+    const rows = XLSX.utils.sheet_to_json(worksheet, {
+      header: 1,
+      defval: ""
+    });
+
+    if (!rows.length) {
+      showMessage("recountInventoryUploadMessage", "The uploaded file is empty.", "error");
+      return;
+    }
+
+    const response = await fetch(SCRIPT_URL, {
+      method: "POST",
+      body: JSON.stringify({
+        action: "replaceRecountInventory",
+        rows
+      })
+    });
+
+    const result = await response.json();
+
+    if (result.success) {
+      showMessage("recountInventoryUploadMessage", result.message, "success");
+      fileInput.value = "";
+      await loadRecountItems();
+    } else {
+      showMessage("recountInventoryUploadMessage", result.message, "error");
+    }
+
+  } catch {
+    showMessage("recountInventoryUploadMessage", "Could not upload Recount Inventory file.", "error");
+  }
+}
+
+async function loadRecountItems() {
+  try {
+    const response = await fetch(`${SCRIPT_URL}?action=getRecountItems`);
+    const result = await response.json();
+
+    if (result.success) {
+      recountItems = result.items || [];
+      populateRecountDropdown();
+    } else {
+      showMessage("recountEntryMessage", result.message, "error");
+    }
+  } catch {
+    showMessage("recountEntryMessage", "Could not load recount items.", "error");
+  }
+}
+
+function populateRecountDropdown() {
+  const select = document.getElementById("recountItemSelect");
+  if (!select) return;
+
+  select.innerHTML = `<option value="">Select item...</option>`;
+
+  recountItems.forEach((item, index) => {
+    const lastSavedText = item.lastSavedBy
+      ? `Last saved by ${item.lastSavedBy} at ${formatTimestampEST(item.lastSavedTime)}`
+      : "Not counted yet";
+
+    const option = document.createElement("option");
+    option.value = index;
+    option.textContent = `${item.itemNo} | ${item.description} | ${lastSavedText}`;
+
+    select.appendChild(option);
+  });
+}
+
+function selectRecountItem() {
+  const index = document.getElementById("recountItemSelect").value;
+
+  if (index === "") {
+    selectedRecountItem = null;
+    clearRecountEntryForm();
+    return;
+  }
+
+  selectedRecountItem = recountItems[Number(index)];
+
+  document.getElementById("recountItemNo").value = selectedRecountItem.itemNo || "";
+  document.getElementById("recountDescription").value = selectedRecountItem.description || "";
+
+  document.getElementById("recountQtyOnHand").value = Number(selectedRecountItem.lastQtyOnHand || 0);
+  document.getElementById("recountFloor").value = Number(selectedRecountItem.lastFloor || 0);
+  document.getElementById("recountSteel").value = Number(selectedRecountItem.lastSteel || 0);
+  document.getElementById("recountBehindSteel").value = Number(selectedRecountItem.lastBehindSteel || 0);
+
+  if (selectedRecountItem.lastSavedBy) {
+    showMessage(
+      "recountLastSavedInfo",
+      `Last Saved by ${selectedRecountItem.lastSavedBy} at ${formatTimestampEST(selectedRecountItem.lastSavedTime)}`,
+      "success"
+    );
+  } else {
+    showMessage("recountLastSavedInfo", "Not counted yet.", "");
+  }
+}
+
+async function submitRecountEntry() {
+  if (!selectedRecountItem) {
+    showMessage("recountEntryMessage", "Please select an item first.", "error");
+    return;
+  }
+
+  try {
+    showMessage("recountEntryMessage", "Saving recount entry...", "");
+
+    const response = await fetch(SCRIPT_URL, {
+      method: "POST",
+      body: JSON.stringify({
+        action: "saveRecountEntry",
+        itemNo: selectedRecountItem.itemNo,
+        description: selectedRecountItem.description,
+        employee: currentUser.name || currentUser.username || "",
+        qtyOnHand: Number(document.getElementById("recountQtyOnHand").value || 0),
+        floor: Number(document.getElementById("recountFloor").value || 0),
+        steel: Number(document.getElementById("recountSteel").value || 0),
+        behindSteel: Number(document.getElementById("recountBehindSteel").value || 0)
+      })
+    });
+
+    const result = await response.json();
+
+    if (result.success) {
+      showMessage("recountEntryMessage", result.message, "success");
+      await loadRecountItems();
+    } else {
+      showMessage("recountEntryMessage", result.message, "error");
+    }
+
+  } catch {
+    showMessage("recountEntryMessage", "Could not save recount entry.", "error");
+  }
+}
+
+function clearRecountEntryForm() {
+  document.getElementById("recountItemNo").value = "";
+  document.getElementById("recountDescription").value = "";
+  document.getElementById("recountQtyOnHand").value = 0;
+  document.getElementById("recountFloor").value = 0;
+  document.getElementById("recountSteel").value = 0;
+  document.getElementById("recountBehindSteel").value = 0;
+  document.getElementById("recountLastSavedInfo").textContent = "";
+}
+
+async function generateRecountReport() {
+  if (currentUser.role !== "Manager") {
+    showMessage("recountReportMessage", "Only managers can generate this report.", "error");
+    return;
+  }
+
+  try {
+    showMessage("recountReportMessage", "Generating recount report...", "");
+
+    const response = await fetch(`${SCRIPT_URL}?action=generateRecountReport`);
+    const result = await response.json();
+
+    if (result.success) {
+      recountReportData = result.report || [];
+      renderRecountReportTable();
+      showMessage("recountReportMessage", result.message, "success");
+    } else {
+      showMessage("recountReportMessage", result.message, "error");
+    }
+
+  } catch {
+    showMessage("recountReportMessage", "Could not generate recount report.", "error");
+  }
+}
+
+function renderRecountReportTable() {
+  const head = document.getElementById("recountReportHead");
+  const body = document.getElementById("recountReportBody");
+
+  if (!head || !body) return;
+
+  head.innerHTML = "";
+  body.innerHTML = "";
+
+  if (!recountReportData.length) {
+    body.innerHTML = `<tr><td>No report generated yet.</td></tr>`;
+    return;
+  }
+
+  const headers = recountReportData[0];
+  const rows = recountReportData.slice(1);
+
+  const headerRow = document.createElement("tr");
+
+  headers.forEach(header => {
+    const th = document.createElement("th");
+    th.textContent = header;
+    headerRow.appendChild(th);
+  });
+
+  head.appendChild(headerRow);
+
+  if (!rows.length) {
+    body.innerHTML = `<tr><td colspan="${headers.length}">No recount report rows found.</td></tr>`;
+    return;
+  }
+
+  rows.forEach(row => {
+    const tr = document.createElement("tr");
+
+    row.forEach((cell, index) => {
+      const td = document.createElement("td");
+      const header = headers[index];
+      const val = Number(cell || 0);
+
+      td.textContent = cell;
+
+      if (header === "Count Variance") {
+        if (val > 0) {
+          td.style.background = "#e6f7ec";
+          td.style.color = "#0a7a2f";
+          td.style.fontWeight = "bold";
+        } else if (val < 0) {
+          td.style.background = "#fdeaea";
+          td.style.color = "#b00020";
+          td.style.fontWeight = "bold";
+        }
+      }
+
+      tr.appendChild(td);
+    });
+
+    body.appendChild(tr);
+  });
+}
+
+async function downloadRecountReportExcel() {
+  if (!recountReportData.length) {
+    showMessage("recountReportMessage", "Generate the report first before downloading.", "error");
+    return;
+  }
+
+  const workbook = new ExcelJS.Workbook();
+  const worksheet = workbook.addWorksheet("Recount Report");
+
+  recountReportData.forEach(row => {
+    worksheet.addRow(row);
+  });
+
+  const headerRow = worksheet.getRow(1);
+  headerRow.font = { bold: true };
+  headerRow.fill = {
+    type: "pattern",
+    pattern: "solid",
+    fgColor: { argb: "FFF4F6F8" }
+  };
+
+  const headers = recountReportData[0];
+  const varianceCol = headers.indexOf("Count Variance") + 1;
+
+  worksheet.columns.forEach(column => {
+    column.width = 18;
+  });
+
+  worksheet.eachRow((row, rowNumber) => {
+    if (rowNumber === 1) return;
+
+    const cell = row.getCell(varianceCol);
+    const value = Number(cell.value || 0);
+
+    if (value > 0) {
+      cell.fill = {
+        type: "pattern",
+        pattern: "solid",
+        fgColor: { argb: "FFE6F7EC" }
+      };
+      cell.font = {
+        color: { argb: "FF0A7A2F" },
+        bold: true
+      };
+    } else if (value < 0) {
+      cell.fill = {
+        type: "pattern",
+        pattern: "solid",
+        fgColor: { argb: "FFFDEAEA" }
+      };
+      cell.font = {
+        color: { argb: "FFB00020" },
+        bold: true
+      };
+    }
+  });
+
+  const buffer = await workbook.xlsx.writeBuffer();
+  const blob = new Blob([buffer], {
+    type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+  });
+
+  const link = document.createElement("a");
+  link.href = URL.createObjectURL(blob);
+  link.download = "recount-report.xlsx";
+  link.click();
+
+  URL.revokeObjectURL(link.href);
+}
+  
+</script>
+</body>
+</html>
