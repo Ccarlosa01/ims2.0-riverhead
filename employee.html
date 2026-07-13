@@ -733,6 +733,50 @@
       width: 100%;
       overflow-x: auto;
     }
+
+    .wine-boat-location-search {
+      margin-top: 18px;
+    }
+    
+    .wine-boat-location-results {
+      margin-top: 14px;
+    }
+    
+    .wine-boat-location-summary {
+      padding: 14px;
+      border-radius: 10px;
+      background: #e9eefc;
+      color: #1f5eff;
+      font-weight: bold;
+    }
+    
+    .wine-boat-location-list {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-top: 10px;
+    }
+    
+    .wine-boat-location-chip {
+      border: 0;
+      border-radius: 999px;
+      padding: 8px 12px;
+      margin: 0;
+      background: #f1f4fa;
+      color: #222;
+      font-weight: bold;
+      cursor: pointer;
+    }
+    
+    .wine-boat-location-chip:hover {
+      background: #dbe5ff;
+      color: #1f5eff;
+    }
+    
+    .wine-boat-unit.highlighted-unit {
+      outline: 3px solid #1f5eff;
+      outline-offset: 3px;
+    }
     
     @keyframes loadingMove {
       from { background-position: 200% 0; }
@@ -1034,7 +1078,7 @@
             All storage units are shown below. Add products and save each unit separately.
           </p>
         </div>
-  
+    
         <button class="secondary" onclick="loadWineBoatStorage()">
           <span
             id="wineBoatRefreshSpinner"
@@ -1044,7 +1088,27 @@
           Refresh Storage
         </button>
       </div>
-  
+    
+      <div class="wine-boat-location-search">
+        <label for="wineBoatLocationSearch">Find Product in Wine Boat Storage</label>
+    
+        <div class="wine-boat-search-wrap">
+          <input
+            id="wineBoatLocationSearch"
+            placeholder="Search by Item No. or Description..."
+            autocomplete="off"
+            oninput="showWineBoatLocationSuggestions(this.value)"
+          />
+    
+          <div
+            id="wineBoatLocationSuggestions"
+            class="wine-boat-suggestions"
+          ></div>
+        </div>
+    
+        <div id="wineBoatLocationResults" class="wine-boat-location-results"></div>
+      </div>
+    
       <div id="wineBoatMessage" class="message"></div>
     </div>
   
@@ -5752,6 +5816,7 @@ function renderWineBoatUnits() {
 
     const unitDiv = document.createElement("div");
     unitDiv.className = "wine-boat-unit";
+    unitDiv.id = `wineBoatUnitCard-${unit}`;
 
     unitDiv.innerHTML = `
       <div class="wine-boat-unit-header">
@@ -6037,6 +6102,198 @@ async function saveWineBoatUnit(unit) {
   }
 }
 
+function getUniqueWineBoatProducts() {
+  const products = new Map();
+
+  Object.values(wineBoatUnits).forEach(entries => {
+    (entries || []).forEach(entry => {
+      const itemNo = String(entry.itemNo || "").trim();
+      if (!itemNo) return;
+
+      if (!products.has(itemNo)) {
+        products.set(itemNo, {
+          itemNo,
+          description: entry.description || ""
+        });
+      }
+    });
+  });
+
+  return Array.from(products.values());
+}
+
+function showWineBoatLocationSuggestions(query) {
+  const box = document.getElementById("wineBoatLocationSuggestions");
+  const results = document.getElementById("wineBoatLocationResults");
+
+  if (!box) return;
+
+  box.innerHTML = "";
+
+  const search = String(query || "").toLowerCase().trim();
+
+  if (!search) {
+    box.style.display = "none";
+
+    if (results) {
+      results.innerHTML = "";
+    }
+
+    clearWineBoatUnitHighlights();
+    return;
+  }
+
+  const matches = getUniqueWineBoatProducts()
+    .filter(product =>
+      String(product.itemNo || "").toLowerCase().includes(search) ||
+      String(product.description || "").toLowerCase().includes(search)
+    )
+    .slice(0, 20);
+
+  if (!matches.length) {
+    box.style.display = "none";
+
+    if (results) {
+      results.innerHTML = `
+        <div class="message error">
+          No matching product was found in Wine Boat Storage.
+        </div>
+      `;
+    }
+
+    clearWineBoatUnitHighlights();
+    return;
+  }
+
+  matches.forEach(product => {
+    const option = document.createElement("div");
+    option.className = "wine-boat-suggestion";
+    option.textContent = `${product.itemNo} - ${product.description}`;
+
+    option.onmousedown = event => {
+      event.preventDefault();
+      selectWineBoatLocationProduct(product);
+    };
+
+    box.appendChild(option);
+  });
+
+  box.style.display = "block";
+}
+
+function selectWineBoatLocationProduct(product) {
+  const input = document.getElementById("wineBoatLocationSearch");
+  const box = document.getElementById("wineBoatLocationSuggestions");
+
+  if (input) {
+    input.value = `${product.itemNo} - ${product.description}`;
+  }
+
+  if (box) {
+    box.style.display = "none";
+  }
+
+  renderWineBoatLocationResults(product.itemNo, product.description);
+}
+
+function findWineBoatLocations(itemNo) {
+  const locations = [];
+
+  Object.entries(wineBoatUnits).forEach(([unitNumber, entries]) => {
+    const matchingEntries = (entries || []).filter(entry =>
+      String(entry.itemNo || "").trim() === String(itemNo || "").trim()
+    );
+
+    if (!matchingEntries.length) return;
+
+    const totalBottles = matchingEntries.reduce(
+      (sum, entry) => sum + Number(entry.totalBottles || 0),
+      0
+    );
+
+    locations.push({
+      unitNumber: Number(unitNumber),
+      totalBottles
+    });
+  });
+
+  return locations.sort((a, b) => a.unitNumber - b.unitNumber);
+}
+
+function renderWineBoatLocationResults(itemNo, description) {
+  const results = document.getElementById("wineBoatLocationResults");
+
+  if (!results) return;
+
+  const locations = findWineBoatLocations(itemNo);
+
+  clearWineBoatUnitHighlights();
+
+  if (!locations.length) {
+    results.innerHTML = `
+      <div class="message error">
+        ${itemNo} - ${description} is not currently assigned to a storage unit.
+      </div>
+    `;
+    return;
+  }
+
+  const totalAcrossUnits = locations.reduce(
+    (sum, location) => sum + location.totalBottles,
+    0
+  );
+
+  results.innerHTML = `
+    <div class="wine-boat-location-summary">
+      ${itemNo} - ${description}<br>
+      Found in ${locations.length} storage unit(s) · ${totalAcrossUnits} total bottle(s)
+    </div>
+
+    <div class="wine-boat-location-list">
+      ${locations.map(location => `
+        <button
+          type="button"
+          class="wine-boat-location-chip"
+          onclick="scrollToWineBoatUnit(${location.unitNumber})"
+        >
+          Storage Unit ${location.unitNumber}
+          (${location.totalBottles} bottles)
+        </button>
+      `).join("")}
+    </div>
+  `;
+
+  locations.forEach(location => {
+    const unitCard = document.getElementById(
+      `wineBoatUnitCard-${location.unitNumber}`
+    );
+
+    if (unitCard) {
+      unitCard.classList.add("highlighted-unit");
+    }
+  });
+}
+
+function clearWineBoatUnitHighlights() {
+  document
+    .querySelectorAll(".wine-boat-unit.highlighted-unit")
+    .forEach(element => {
+      element.classList.remove("highlighted-unit");
+    });
+}
+
+function scrollToWineBoatUnit(unit) {
+  const unitCard = document.getElementById(`wineBoatUnitCard-${unit}`);
+
+  if (!unitCard) return;
+
+  unitCard.scrollIntoView({
+    behavior: "smooth",
+    block: "start"
+  });
+
+  unitCard.classList.add("highlighted-unit");
+}
 
   
 </script>
