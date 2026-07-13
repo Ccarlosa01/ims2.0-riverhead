@@ -5975,9 +5975,14 @@ function updateWineBoatEntry(unit, index, field, value) {
   renderWineBoatUnitTable(unit);
 }
 
-function removeWineBoatEntry(unit, index) {
+async function removeWineBoatEntry(unit, index) {
+  if (!confirm("Remove this product from the storage unit?")) return;
+
   wineBoatUnits[String(unit)].splice(index, 1);
+
   renderWineBoatUnitTable(unit);
+
+  await saveWineBoatUnit(unit);
 }
 
 async function saveWineBoatUnit(unit) {
