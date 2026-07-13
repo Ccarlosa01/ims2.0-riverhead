@@ -7037,20 +7037,6 @@ async function saveWeeklyBuys() {
     if (spinner) spinner.style.display = "none";
   }
 }
-
-document.addEventListener("mousedown", event => {
-  const box = document.getElementById("globalWeeklyBuySuggestions");
-
-  if (!box) return;
-
-  const clickedDescriptionInput =
-    event.target &&
-    String(event.target.id || "").startsWith("weeklyBuyDescription-");
-
-  if (!box.contains(event.target) && !clickedDescriptionInput) {
-    closeWeeklyBuySuggestions();
-  }
-});
   
 </script>
 </body>
