@@ -866,6 +866,33 @@
       flex-wrap: wrap;
       margin-top: 18px;
     }
+
+    .global-weekly-buy-suggestions {
+      position: fixed;
+      display: none;
+      z-index: 9999999;
+      max-height: 260px;
+      overflow-y: auto;
+      background: #fff;
+      border: 1px solid #cfcfcf;
+      border-radius: 8px;
+      box-shadow: 0 12px 30px rgba(0,0,0,.22);
+    }
+    
+    .global-weekly-buy-suggestion {
+      padding: 12px 14px;
+      cursor: pointer;
+      border-bottom: 1px solid #eee;
+      white-space: normal;
+    }
+    
+    .global-weekly-buy-suggestion:last-child {
+      border-bottom: 0;
+    }
+    
+    .global-weekly-buy-suggestion:hover {
+      background: #f0f4ff;
+    }
     
     @media (max-width: 800px) {
       .weekly-buys-controls {
@@ -929,6 +956,8 @@
     
   </div>
 
+  <div id="globalWeeklyBuySuggestions" class="global-weekly-buy-suggestions"></div>
+  
   <div id="workbench" class="tab-section active">
 
     <div class="card">
@@ -6695,19 +6724,14 @@ function renderWeeklyBuysTable() {
       </td>
 
       <td>
-        <div class="weekly-buy-search-wrap">
-          <input
-            value="${entry.description || ""}"
-            placeholder="Search item no. or description..."
-            autocomplete="off"
-            oninput="showWeeklyBuySuggestions(${index}, this.value)"
-          />
-
-          <div
-            id="weeklyBuySuggestions-${index}"
-            class="weekly-buy-suggestions"
-          ></div>
-        </div>
+        <input
+          id="weeklyBuyDescription-${index}"
+          value="${entry.description || ""}"
+          placeholder="Search item no. or description..."
+          autocomplete="off"
+          oninput="showWeeklyBuySuggestions(${index}, this.value, this)"
+          onfocus="showWeeklyBuySuggestions(${index}, this.value, this)"
+        />
       </td>
 
       <td>
@@ -6786,19 +6810,20 @@ function renderWeeklyBuysTable() {
   updateWeeklyBuysTotal();
 }
 
-function showWeeklyBuySuggestions(index, query) {
-  const box = document.getElementById(`weeklyBuySuggestions-${index}`);
+let activeWeeklyBuySuggestionIndex = null;
 
-  if (!box) return;
+function showWeeklyBuySuggestions(index, query, inputElement) {
+  const box = document.getElementById("globalWeeklyBuySuggestions");
 
-  box.innerHTML = "";
+  if (!box || !inputElement) return;
 
+  activeWeeklyBuySuggestionIndex = index;
   weeklyBuysEntries[index].description = query;
 
   const search = String(query || "").toLowerCase().trim();
 
   if (!search) {
-    box.style.display = "none";
+    closeWeeklyBuySuggestions();
     return;
   }
 
@@ -6810,24 +6835,43 @@ function showWeeklyBuySuggestions(index, query) {
     .slice(0, 20);
 
   if (!matches.length) {
-    box.style.display = "none";
+    closeWeeklyBuySuggestions();
     return;
   }
 
+  const rect = inputElement.getBoundingClientRect();
+
+  box.style.left = `${rect.left}px`;
+  box.style.top = `${rect.bottom + 4}px`;
+  box.style.width = `${rect.width}px`;
+  box.innerHTML = "";
+
   matches.forEach(item => {
     const option = document.createElement("div");
-    option.className = "weekly-buy-suggestion";
+    option.className = "global-weekly-buy-suggestion";
     option.textContent = `${item.itemNo} - ${item.description}`;
 
     option.onmousedown = event => {
       event.preventDefault();
       selectWeeklyBuyProduct(index, item);
+      closeWeeklyBuySuggestions();
     };
 
     box.appendChild(option);
   });
 
   box.style.display = "block";
+}
+
+function closeWeeklyBuySuggestions() {
+  const box = document.getElementById("globalWeeklyBuySuggestions");
+
+  if (box) {
+    box.style.display = "none";
+    box.innerHTML = "";
+  }
+
+  activeWeeklyBuySuggestionIndex = null;
 }
 
 function selectWeeklyBuyProduct(index, item) {
@@ -6839,10 +6883,7 @@ function selectWeeklyBuyProduct(index, item) {
   entry.btCost = Number(item.costEa || item.avgCost || 0);
 
   recalculateWeeklyBuyEntry(index);
-
-  const box = document.getElementById(`weeklyBuySuggestions-${index}`);
-  if (box) box.style.display = "none";
-
+  closeWeeklyBuySuggestions();
   renderWeeklyBuysTable();
 }
 
@@ -6996,6 +7037,20 @@ async function saveWeeklyBuys() {
     if (spinner) spinner.style.display = "none";
   }
 }
+
+document.addEventListener("mousedown", event => {
+  const box = document.getElementById("globalWeeklyBuySuggestions");
+
+  if (!box) return;
+
+  const clickedDescriptionInput =
+    event.target &&
+    String(event.target.id || "").startsWith("weeklyBuyDescription-");
+
+  if (!box.contains(event.target) && !clickedDescriptionInput) {
+    closeWeeklyBuySuggestions();
+  }
+});
   
 </script>
 </body>
