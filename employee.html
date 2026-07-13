@@ -1795,7 +1795,7 @@
 <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
 
 <script>
-const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwf64-XpVV6ftgcq190EbE_vBugpLeDZyF0-Qh1tlAPHx3sh6Yr4ILjbB4Y8NL-ec56/exec";
+const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbyDwbgcdqcsrSh0GIv0DT2Wi0JHuVrhROKwi9pYZNtf62MEx3lbqkGAEj2QXciVa9lc/exec";
 
 let currentUser = null;
 let inventory = [];
@@ -6874,13 +6874,69 @@ function closeWeeklyBuySuggestions() {
   activeWeeklyBuySuggestionIndex = null;
 }
 
-function selectWeeklyBuyProduct(index, item) {
+async function selectWeeklyBuyProduct(index, item) {
   const entry = weeklyBuysEntries[index];
+
+  if (!entry) return;
 
   entry.itemNo = item.itemNo || "";
   entry.description = item.description || "";
-  entry.bpc = Number(item.bpc || 0);
   entry.btCost = Number(item.costEa || item.avgCost || 0);
+
+  let productBPC = Number(item.bpc || 0);
+
+  if (!productBPC) {
+    const enteredBPC = prompt(
+      `${entry.description} does not have a BPC saved.\n\nEnter the correct Bottles Per Case:`
+    );
+
+    if (enteredBPC === null) {
+      entry.bpc = 0;
+
+      showMessage(
+        "weeklyBuysMessage",
+        "BPC was not entered. This product cannot calculate a total until a valid BPC is provided.",
+        "error"
+      );
+
+      closeWeeklyBuySuggestions();
+      renderWeeklyBuysTable();
+      return;
+    }
+
+    productBPC = Number(enteredBPC);
+
+    if (!Number.isInteger(productBPC) || productBPC <= 0) {
+      entry.bpc = 0;
+
+      showMessage(
+        "weeklyBuysMessage",
+        "Please enter a valid whole-number BPC greater than zero.",
+        "error"
+      );
+
+      closeWeeklyBuySuggestions();
+      renderWeeklyBuysTable();
+      return;
+    }
+
+    const saved = await saveMissingProductBPC(
+      entry.itemNo,
+      productBPC
+    );
+
+    if (!saved) {
+      entry.bpc = 0;
+      closeWeeklyBuySuggestions();
+      renderWeeklyBuysTable();
+      return;
+    }
+
+    // Update the currently loaded inventory object too.
+    item.bpc = productBPC;
+  }
+
+  entry.bpc = productBPC;
 
   recalculateWeeklyBuyEntry(index);
   closeWeeklyBuySuggestions();
@@ -7035,6 +7091,66 @@ async function saveWeeklyBuys() {
   } finally {
     if (btn) btn.disabled = false;
     if (spinner) spinner.style.display = "none";
+  }
+}
+
+async function saveMissingProductBPC(itemNo, bpc) {
+  try {
+    showMessage(
+      "weeklyBuysMessage",
+      "Saving product BPC...",
+      ""
+    );
+
+    const response = await fetch(SCRIPT_URL, {
+      method: "POST",
+      body: JSON.stringify({
+        action: "saveProductBPC",
+        itemNo,
+        bpc
+      })
+    });
+
+    const result = await response.json();
+
+    if (!result.success) {
+      showMessage(
+        "weeklyBuysMessage",
+        result.message || "Could not save BPC.",
+        "error"
+      );
+
+      return false;
+    }
+
+    // Update every matching product in the loaded inventory array.
+    inventory.forEach(product => {
+      if (
+        String(product.itemNo || "").trim() ===
+        String(itemNo || "").trim()
+      ) {
+        product.bpc = bpc;
+      }
+    });
+
+    showMessage(
+      "weeklyBuysMessage",
+      result.message,
+      "success"
+    );
+
+    return true;
+
+  } catch (error) {
+    console.error(error);
+
+    showMessage(
+      "weeklyBuysMessage",
+      "Could not save the product BPC.",
+      "error"
+    );
+
+    return false;
   }
 }
   
