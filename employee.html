@@ -777,6 +777,93 @@
       outline: 3px solid #1f5eff;
       outline-offset: 3px;
     }
+
+    .weekly-buys-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 18px;
+      flex-wrap: wrap;
+    }
+    
+    .weekly-buys-title {
+      margin: 0;
+    }
+    
+    .weekly-buys-total {
+      font-size: 20px;
+      font-weight: bold;
+      color: #1f5eff;
+    }
+    
+    .weekly-buys-controls {
+      display: grid;
+      grid-template-columns: 1fr auto auto;
+      gap: 12px;
+      align-items: end;
+      margin-top: 18px;
+    }
+    
+    .weekly-buys-table-wrap {
+      width: 100%;
+      overflow-x: auto;
+      margin-top: 18px;
+    }
+    
+    .weekly-buys-table {
+      min-width: 1450px;
+    }
+    
+    .weekly-buy-search-wrap {
+      position: relative;
+      min-width: 280px;
+    }
+    
+    .weekly-buy-suggestions {
+      position: absolute;
+      top: 100%;
+      left: 0;
+      right: 0;
+      display: none;
+      z-index: 9999;
+      max-height: 220px;
+      overflow-y: auto;
+      background: white;
+      border: 1px solid #ccc;
+      border-radius: 8px;
+      box-shadow: 0 8px 18px rgba(0,0,0,.12);
+    }
+    
+    .weekly-buy-suggestion {
+      padding: 10px;
+      cursor: pointer;
+      border-bottom: 1px solid #eee;
+    }
+    
+    .weekly-buy-suggestion:hover {
+      background: #f0f4ff;
+    }
+    
+    .weekly-buy-readonly {
+      background: #f1f1f1;
+      color: #555;
+      cursor: not-allowed;
+    }
+    
+    .weekly-buy-actions {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 12px;
+      flex-wrap: wrap;
+      margin-top: 18px;
+    }
+    
+    @media (max-width: 800px) {
+      .weekly-buys-controls {
+        grid-template-columns: 1fr;
+      }
+    }
     
     @keyframes loadingMove {
       from { background-position: 200% 0; }
@@ -813,6 +900,9 @@
     <button class="tab-btn" onclick="showTab('priceTags', this)">Price Tags</button>
     <!-- COMMENTED OUT: <button class="tab-btn" onclick="showTab('tastings', this)">Tastings</button> -->
     
+    <button id="weeklyBuysTabBtn" class="tab-btn manager-only" onclick="showTab('weeklyBuys', this)" style="display:none;">
+      Weekly Buys
+    </button>
     
     <button class="tab-btn" onclick="showTab('inventoryEntry', this)">Inventory Entry</button>
     <!-- COMMENTED OUT: <button class="tab-btn" onclick="showTab('recountEntry', this)">Recount Entry</button> -->
@@ -1113,6 +1203,89 @@
     </div>
   
     <div id="wineBoatUnits"></div>
+  
+  </div>
+
+  <div id="weeklyBuys" class="tab-section">
+    <div class="card">
+      <div class="weekly-buys-header">
+        <h2 id="weeklyBuysTitle" class="weekly-buys-title">
+          Weekly Buys
+        </h2>
+  
+        <div id="weeklyBuysTotal" class="weekly-buys-total">
+          Total Cost: $0.00
+        </div>
+      </div>
+  
+      <div class="weekly-buys-controls">
+        <div>
+          <label for="weeklyBuysWeekDate">Select Week</label>
+          <input
+            type="date"
+            id="weeklyBuysWeekDate"
+            onchange="changeWeeklyBuysWeek()"
+          />
+        </div>
+  
+        <button class="secondary" onclick="goToCurrentWeeklyBuysWeek()">
+          Current Week
+        </button>
+  
+        <button id="refreshWeeklyBuysBtn" class="secondary" onclick="loadWeeklyBuys()">
+          <span
+            id="refreshWeeklyBuysSpinner"
+            class="mini-spinner"
+            style="display:none;"
+          ></span>
+          Refresh
+        </button>
+      </div>
+  
+      <div id="weeklyBuysMessage" class="message"></div>
+    </div>
+  
+    <div class="card">
+      <div class="weekly-buys-table-wrap">
+        <table class="weekly-buys-table">
+          <thead>
+            <tr>
+              <th>Ordered Date</th>
+              <th>Item No.</th>
+              <th>Description</th>
+              <th>BPC</th>
+              <th>BT Cost</th>
+              <th>New BT Cost</th>
+              <th># of Cases Ordered</th>
+              <th>$ Total</th>
+              <th>Notes</th>
+              <th>Action</th>
+            </tr>
+          </thead>
+  
+          <tbody id="weeklyBuysTableBody">
+            <tr>
+              <td colspan="10">Select a week to begin.</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+  
+      <div class="weekly-buy-actions">
+        <button class="secondary" onclick="addWeeklyBuyRow()">
+          Add Product
+        </button>
+  
+        <button id="saveWeeklyBuysBtn" class="primary" onclick="saveWeeklyBuys()">
+          <span
+            id="saveWeeklyBuysSpinner"
+            class="mini-spinner"
+            style="display:none;"
+          ></span>
+          Save Weekly Buys
+        </button>
+      </div>
+    </div>
   
   </div>
   
@@ -1609,6 +1782,10 @@ let selectedRecountItem = null;
 let recountReportData = [];
 let wineBoatMaxUnits = 0;
 let wineBoatUnits = {};
+let weeklyBuysEntries = [];
+let weeklyBuysWeekStart = "";
+let weeklyBuysWeekEnd = "";
+  
 
 window.onload = async function () {
   const savedUser = localStorage.getItem("warehouseUser");
@@ -1639,6 +1816,10 @@ window.onload = async function () {
     });
   }
 
+  if (currentUser.role === "Manager") {
+    setupWeeklyBuys();
+  }
+  
   document.getElementById("userInfo").textContent =
     `Logged in as ${currentUser.name} | ${currentUser.role}`;
 
@@ -1661,6 +1842,14 @@ function showTab(tabId, btn) {
 
   if (tabId === "inventoryReport" && currentUser.role !== "Manager") {
     return;
+  }
+
+  if (tabId === "weeklyBuys" && currentUser.role === "Manager") {
+    if (!weeklyBuysWeekStart) {
+      setupWeeklyBuys();
+    } else {
+      loadWeeklyBuys();
+    }
   }
 
   clearAllMessages();
@@ -2191,7 +2380,8 @@ function clearAllMessages() {
     "recountLastSavedInfo",
     "recountReportMessage",
     "tastingMessage",
-    "wineBoatMessage"
+    "wineBoatMessage",
+    "weeklyBuysMessage"
   ];
 
   messageIds.forEach(id => {
@@ -6295,6 +6485,509 @@ function scrollToWineBoatUnit(unit) {
   unitCard.classList.add("highlighted-unit");
 }
 
+function setupWeeklyBuys() {
+  const input = document.getElementById("weeklyBuysWeekDate");
+  if (!input) return;
+
+  const today = new Date();
+  input.value = toLocalDateInputValue(today);
+
+  changeWeeklyBuysWeek();
+}
+
+function toLocalDateInputValue(date) {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+
+  return `${year}-${month}-${day}`;
+}
+
+function parseLocalDate(dateString) {
+  if (!dateString) return null;
+
+  const [year, month, day] = dateString.split("-").map(Number);
+
+  return new Date(year, month - 1, day);
+}
+
+function getMondayForDate(date) {
+  const result = new Date(date);
+  const day = result.getDay();
+  const difference = day === 0 ? -6 : 1 - day;
+
+  result.setDate(result.getDate() + difference);
+  result.setHours(0, 0, 0, 0);
+
+  return result;
+}
+
+function getSundayForMonday(monday) {
+  const sunday = new Date(monday);
+  sunday.setDate(sunday.getDate() + 6);
+  sunday.setHours(0, 0, 0, 0);
+
+  return sunday;
+}
+
+function formatWeeklyBuysHeaderDate(date) {
+  return date.toLocaleDateString("en-US", {
+    month: "long",
+    day: "numeric",
+    year: "numeric"
+  });
+}
+
+function changeWeeklyBuysWeek() {
+  const input = document.getElementById("weeklyBuysWeekDate");
+
+  if (!input || !input.value) return;
+
+  const selectedDate = parseLocalDate(input.value);
+  const monday = getMondayForDate(selectedDate);
+  const sunday = getSundayForMonday(monday);
+
+  weeklyBuysWeekStart = toLocalDateInputValue(monday);
+  weeklyBuysWeekEnd = toLocalDateInputValue(sunday);
+
+  document.getElementById("weeklyBuysTitle").textContent =
+    `Weekly Buys for Week: ${formatWeeklyBuysHeaderDate(monday)} - ${formatWeeklyBuysHeaderDate(sunday)}`;
+
+  loadWeeklyBuys();
+}
+
+function goToCurrentWeeklyBuysWeek() {
+  const input = document.getElementById("weeklyBuysWeekDate");
+
+  if (!input) return;
+
+  input.value = toLocalDateInputValue(new Date());
+  changeWeeklyBuysWeek();
+}
+
+async function loadWeeklyBuys() {
+  if (!weeklyBuysWeekStart || !weeklyBuysWeekEnd) return;
+
+  const btn = document.getElementById("refreshWeeklyBuysBtn");
+  const spinner = document.getElementById("refreshWeeklyBuysSpinner");
+
+  try {
+    if (btn) btn.disabled = true;
+    if (spinner) spinner.style.display = "inline-block";
+
+    const response = await fetch(
+      `${SCRIPT_URL}?action=getWeeklyBuys` +
+      `&weekStart=${encodeURIComponent(weeklyBuysWeekStart)}` +
+      `&weekEnd=${encodeURIComponent(weeklyBuysWeekEnd)}`
+    );
+
+    const result = await response.json();
+
+    if (!result.success) {
+      showMessage("weeklyBuysMessage", result.message, "error");
+      return;
+    }
+
+    weeklyBuysEntries = (result.rows || []).map(row => ({
+      orderedDate: row.orderedDate || weeklyBuysWeekStart,
+      itemNo: row.itemNo || "",
+      description: row.description || "",
+      bpc: Number(row.bpc || 0),
+      btCost: Number(row.btCost || 0),
+      newBtCost:
+        row.newBtCost === "" ||
+        row.newBtCost === null ||
+        row.newBtCost === undefined
+          ? ""
+          : Number(row.newBtCost),
+      casesOrdered: Number(row.casesOrdered || 0),
+      total: Number(row.total || 0),
+      notes: row.notes || ""
+    }));
+
+    if (!weeklyBuysEntries.length) {
+      weeklyBuysEntries = [createBlankWeeklyBuyEntry()];
+    }
+
+    renderWeeklyBuysTable();
+    updateWeeklyBuysTotal();
+
+  } catch (error) {
+    console.error(error);
+
+    showMessage(
+      "weeklyBuysMessage",
+      "Could not load Weekly Buys.",
+      "error"
+    );
+  } finally {
+    if (btn) btn.disabled = false;
+    if (spinner) spinner.style.display = "none";
+  }
+}
+
+function createBlankWeeklyBuyEntry() {
+  return {
+    orderedDate: weeklyBuysWeekStart || "",
+    itemNo: "",
+    description: "",
+    bpc: 0,
+    btCost: 0,
+    newBtCost: "",
+    casesOrdered: 0,
+    total: 0,
+    notes: ""
+  };
+}
+
+function addWeeklyBuyRow() {
+  weeklyBuysEntries.push(createBlankWeeklyBuyEntry());
+  renderWeeklyBuysTable();
+}
+
+function renderWeeklyBuysTable() {
+  const tbody = document.getElementById("weeklyBuysTableBody");
+
+  if (!tbody) return;
+
+  tbody.innerHTML = "";
+
+  if (!weeklyBuysEntries.length) {
+    tbody.innerHTML = `
+      <tr>
+        <td colspan="10">No Weekly Buy entries.</td>
+      </tr>
+    `;
+    updateWeeklyBuysTotal();
+    return;
+  }
+
+  weeklyBuysEntries.forEach((entry, index) => {
+    recalculateWeeklyBuyEntry(index);
+
+    const tr = document.createElement("tr");
+
+    tr.innerHTML = `
+      <td>
+        <input
+          type="date"
+          value="${entry.orderedDate || ""}"
+          min="${weeklyBuysWeekStart}"
+          max="${weeklyBuysWeekEnd}"
+          onchange="updateWeeklyBuyEntry(${index}, 'orderedDate', this.value)"
+        />
+      </td>
+
+      <td>
+        <input
+          class="weekly-buy-readonly"
+          value="${entry.itemNo || ""}"
+          readonly
+        />
+      </td>
+
+      <td>
+        <div class="weekly-buy-search-wrap">
+          <input
+            value="${entry.description || ""}"
+            placeholder="Search item no. or description..."
+            autocomplete="off"
+            oninput="showWeeklyBuySuggestions(${index}, this.value)"
+          />
+
+          <div
+            id="weeklyBuySuggestions-${index}"
+            class="weekly-buy-suggestions"
+          ></div>
+        </div>
+      </td>
+
+      <td>
+        <input
+          class="weekly-buy-readonly"
+          type="number"
+          value="${Number(entry.bpc || 0)}"
+          readonly
+        />
+      </td>
+
+      <td>
+        <input
+          class="weekly-buy-readonly"
+          type="number"
+          step="0.01"
+          value="${Number(entry.btCost || 0).toFixed(2)}"
+          readonly
+        />
+      </td>
+
+      <td>
+        <input
+          type="number"
+          step="0.01"
+          min="0"
+          value="${
+            entry.newBtCost === ""
+              ? ""
+              : Number(entry.newBtCost).toFixed(2)
+          }"
+          placeholder="Optional"
+          onchange="updateWeeklyBuyEntry(${index}, 'newBtCost', this.value)"
+        />
+      </td>
+
+      <td>
+        <input
+          type="number"
+          min="0"
+          step="1"
+          value="${Number(entry.casesOrdered || 0)}"
+          onchange="updateWeeklyBuyEntry(${index}, 'casesOrdered', this.value)"
+        />
+      </td>
+
+      <td>
+        <input
+          class="weekly-buy-readonly"
+          value="$${Number(entry.total || 0).toFixed(2)}"
+          readonly
+        />
+      </td>
+
+      <td>
+        <input
+          value="${entry.notes || ""}"
+          placeholder="Optional notes"
+          onchange="updateWeeklyBuyEntry(${index}, 'notes', this.value)"
+        />
+      </td>
+
+      <td>
+        <button
+          class="danger"
+          onclick="removeWeeklyBuyEntry(${index})"
+        >
+          Remove
+        </button>
+      </td>
+    `;
+
+    tbody.appendChild(tr);
+  });
+
+  updateWeeklyBuysTotal();
+}
+
+function showWeeklyBuySuggestions(index, query) {
+  const box = document.getElementById(`weeklyBuySuggestions-${index}`);
+
+  if (!box) return;
+
+  box.innerHTML = "";
+
+  weeklyBuysEntries[index].description = query;
+
+  const search = String(query || "").toLowerCase().trim();
+
+  if (!search) {
+    box.style.display = "none";
+    return;
+  }
+
+  const matches = inventory
+    .filter(item =>
+      String(item.itemNo || "").toLowerCase().includes(search) ||
+      String(item.description || "").toLowerCase().includes(search)
+    )
+    .slice(0, 20);
+
+  if (!matches.length) {
+    box.style.display = "none";
+    return;
+  }
+
+  matches.forEach(item => {
+    const option = document.createElement("div");
+    option.className = "weekly-buy-suggestion";
+    option.textContent = `${item.itemNo} - ${item.description}`;
+
+    option.onmousedown = event => {
+      event.preventDefault();
+      selectWeeklyBuyProduct(index, item);
+    };
+
+    box.appendChild(option);
+  });
+
+  box.style.display = "block";
+}
+
+function selectWeeklyBuyProduct(index, item) {
+  const entry = weeklyBuysEntries[index];
+
+  entry.itemNo = item.itemNo || "";
+  entry.description = item.description || "";
+  entry.bpc = Number(item.bpc || 0);
+  entry.btCost = Number(item.costEa || item.avgCost || 0);
+
+  recalculateWeeklyBuyEntry(index);
+
+  const box = document.getElementById(`weeklyBuySuggestions-${index}`);
+  if (box) box.style.display = "none";
+
+  renderWeeklyBuysTable();
+}
+
+function updateWeeklyBuyEntry(index, field, value) {
+  const entry = weeklyBuysEntries[index];
+
+  if (!entry) return;
+
+  const numericFields = [
+    "bpc",
+    "btCost",
+    "casesOrdered"
+  ];
+
+  if (field === "newBtCost") {
+    entry.newBtCost = value === "" ? "" : Number(value || 0);
+  } else if (numericFields.includes(field)) {
+    entry[field] = Number(value || 0);
+  } else {
+    entry[field] = value;
+  }
+
+  recalculateWeeklyBuyEntry(index);
+  renderWeeklyBuysTable();
+}
+
+function recalculateWeeklyBuyEntry(index) {
+  const entry = weeklyBuysEntries[index];
+
+  if (!entry) return;
+
+  const hasNewCost =
+    entry.newBtCost !== "" &&
+    entry.newBtCost !== null &&
+    entry.newBtCost !== undefined;
+
+  const effectiveCost = hasNewCost
+    ? Number(entry.newBtCost || 0)
+    : Number(entry.btCost || 0);
+
+  entry.total =
+    effectiveCost *
+    Number(entry.bpc || 0) *
+    Number(entry.casesOrdered || 0);
+}
+
+function removeWeeklyBuyEntry(index) {
+  weeklyBuysEntries.splice(index, 1);
+
+  if (!weeklyBuysEntries.length) {
+    weeklyBuysEntries.push(createBlankWeeklyBuyEntry());
+  }
+
+  renderWeeklyBuysTable();
+}
+
+function updateWeeklyBuysTotal() {
+  const total = weeklyBuysEntries.reduce(
+    (sum, entry) => sum + Number(entry.total || 0),
+    0
+  );
+
+  const totalElement = document.getElementById("weeklyBuysTotal");
+
+  if (totalElement) {
+    totalElement.textContent = `Total Cost: $${total.toFixed(2)}`;
+  }
+}
+
+async function saveWeeklyBuys() {
+  if (currentUser.role !== "Manager") {
+    showMessage(
+      "weeklyBuysMessage",
+      "Only managers can save Weekly Buys.",
+      "error"
+    );
+    return;
+  }
+
+  const validEntries = weeklyBuysEntries.filter(entry =>
+    entry.itemNo &&
+    entry.description &&
+    entry.orderedDate &&
+    Number(entry.casesOrdered || 0) > 0
+  );
+
+  if (!validEntries.length) {
+    showMessage(
+      "weeklyBuysMessage",
+      "Add at least one valid Weekly Buy entry.",
+      "error"
+    );
+    return;
+  }
+
+  const btn = document.getElementById("saveWeeklyBuysBtn");
+  const spinner = document.getElementById("saveWeeklyBuysSpinner");
+
+  try {
+    if (btn) btn.disabled = true;
+    if (spinner) spinner.style.display = "inline-block";
+
+    showMessage(
+      "weeklyBuysMessage",
+      "Saving Weekly Buys...",
+      ""
+    );
+
+    const response = await fetch(SCRIPT_URL, {
+      method: "POST",
+      body: JSON.stringify({
+        action: "saveWeeklyBuys",
+        weekStart: weeklyBuysWeekStart,
+        weekEnd: weeklyBuysWeekEnd,
+        entries: validEntries,
+        savedBy:
+          currentUser.name ||
+          currentUser.username ||
+          ""
+      })
+    });
+
+    const result = await response.json();
+
+    if (result.success) {
+      showMessage(
+        "weeklyBuysMessage",
+        result.message,
+        "success"
+      );
+
+      await loadWeeklyBuys();
+    } else {
+      showMessage(
+        "weeklyBuysMessage",
+        result.message,
+        "error"
+      );
+    }
+
+  } catch (error) {
+    console.error(error);
+
+    showMessage(
+      "weeklyBuysMessage",
+      "Could not save Weekly Buys.",
+      "error"
+    );
+  } finally {
+    if (btn) btn.disabled = false;
+    if (spinner) spinner.style.display = "none";
+  }
+}
   
 </script>
 </body>
