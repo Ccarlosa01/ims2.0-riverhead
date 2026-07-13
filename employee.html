@@ -7277,7 +7277,7 @@ async function downloadWeeklyBuysExcel() {
   };
 
   worksheet.getCell(`J${totalRowNumber}`).value = {
-    formula: `SUM(J2:J${worksheet.rowCount})`
+    formula: `SUM(J2:J${worksheet.rowCount-1})`
   };
 
   worksheet.getCell(`J${totalRowNumber}`).numFmt = "$0.00";
