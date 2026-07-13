@@ -683,6 +683,56 @@
     .wide-table td {
       white-space: normal;
     }
+
+    .wine-boat-unit {
+      background: white;
+      padding: 22px;
+      border-radius: 14px;
+      box-shadow: 0 8px 24px rgba(0,0,0,.08);
+      margin-bottom: 22px;
+    }
+    
+    .wine-boat-unit-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 14px;
+    }
+    
+    .wine-boat-search-wrap {
+      position: relative;
+      margin-top: 15px;
+    }
+    
+    .wine-boat-suggestions {
+      position: absolute;
+      top: 100%;
+      left: 0;
+      right: 0;
+      display: none;
+      z-index: 9999;
+      max-height: 220px;
+      overflow-y: auto;
+      background: white;
+      border: 1px solid #ccc;
+      border-radius: 8px;
+      box-shadow: 0 8px 18px rgba(0,0,0,.12);
+    }
+    
+    .wine-boat-suggestion {
+      padding: 10px;
+      cursor: pointer;
+      border-bottom: 1px solid #eee;
+    }
+    
+    .wine-boat-suggestion:hover {
+      background: #f0f4ff;
+    }
+    
+    .wine-boat-table-wrap {
+      width: 100%;
+      overflow-x: auto;
+    }
     
     @keyframes loadingMove {
       from { background-position: 200% 0; }
@@ -713,6 +763,7 @@
     <button class="tab-btn active" onclick="showTab('workbench', this)">Update Pallet</button>
     <button class="tab-btn" onclick="showTab('catalog', this)">Catalog View</button>
     <button class="tab-btn" onclick="showTab('clear', this)">Clear Pallets</button>
+    <button class="tab-btn" onclick="showTab('wineBoatStorage', this)">Wine Boat Storage</button>
     <button class="tab-btn" onclick="showTab('breakers', this)">Breakers</button>
     <button class="tab-btn" onclick="showTab('customerOrder', this)">Customer Order</button>
     <button class="tab-btn" onclick="showTab('priceTags', this)">Price Tags</button>
@@ -974,6 +1025,33 @@
   
   </div>
 
+  <div id="wineBoatStorage" class="tab-section">
+    <div class="card">
+      <div class="preview-header">
+        <div>
+          <h2>Wine Boat Storage</h2>
+          <p class="muted">
+            All storage units are shown below. Add products and save each unit separately.
+          </p>
+        </div>
+  
+        <button class="secondary" onclick="loadWineBoatStorage()">
+          <span
+            id="wineBoatRefreshSpinner"
+            class="mini-spinner"
+            style="display:none;"
+          ></span>
+          Refresh Storage
+        </button>
+      </div>
+  
+      <div id="wineBoatMessage" class="message"></div>
+    </div>
+  
+    <div id="wineBoatUnits"></div>
+  
+  </div>
+  
   <div id="customerOrder" class="tab-section">
     <div class="card">
       <div class="card-header">
@@ -1443,7 +1521,7 @@
 <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
 
 <script>
-const SCRIPT_URL = "https://script.google.com/macros/s/AKfycby2U12V_Kqt5pzNROlsqLeSGU6XoSSW2rg2pHl838BjB7NiYgu5W3pwPzFABOZhDUhK/exec";
+const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwrYHxbG0_3ee8XsOFKNM7Z92ecKVpN1YbAgqovJZYjNXI5LWZCtn9VN7nvwPtTRrcC/exec";
 
 let currentUser = null;
 let inventory = [];
@@ -1465,6 +1543,8 @@ let tastingViewMode = "list";
 let recountItems = [];
 let selectedRecountItem = null;
 let recountReportData = [];
+let wineBoatMaxUnits = 0;
+let wineBoatUnits = {};
 
 window.onload = async function () {
   const savedUser = localStorage.getItem("warehouseUser");
@@ -1538,6 +1618,10 @@ function showTab(tabId, btn) {
 
   if (tabId === "breakers") {
     loadBreakers();
+  }
+
+  if (tabId === "wineBoatStorage") {
+    loadWineBoatStorage();
   }
 }
 
@@ -2031,26 +2115,33 @@ function clearAllMessages() {
     "totalsBox",
     "clearMessage",
     "inventoryUploadMessage",
+    "barcodeUploadMessage",
     "breakerMessage",
     "orderMessage",
     "inventoryEntryMessage",
     "inventoryEntryProductInfo",
     "inventoryScannerMessage",
-    "barcodeUploadMessage",
     "inventoryReportMessage",
-    "tastingMessage",
     "recountInventoryUploadMessage",
     "recountEntryMessage",
     "recountLastSavedInfo",
-    "recountReportMessage"
+    "recountReportMessage",
+    "tastingMessage",
+    "wineBoatMessage"
   ];
 
   messageIds.forEach(id => {
     const el = document.getElementById(id);
+
     if (el) {
       el.textContent = "";
       el.className = "message";
     }
+  });
+
+  document.querySelectorAll('[id^="wineBoatUnitMessage-"]').forEach(el => {
+    el.textContent = "";
+    el.className = "message";
   });
 }
 
@@ -5598,7 +5689,352 @@ async function downloadRecountReportExcel() {
 
   URL.revokeObjectURL(link.href);
 }
+
+async function loadWineBoatStorage() {
+  const spinner = document.getElementById("wineBoatRefreshSpinner");
+
+  try {
+    if (spinner) spinner.style.display = "inline-block";
+
+    const response = await fetch(
+      `${SCRIPT_URL}?action=getWineBoatStorage`
+    );
+
+    const result = await response.json();
+
+    if (!result.success) {
+      showMessage("wineBoatMessage", result.message, "error");
+      return;
+    }
+
+    wineBoatMaxUnits = Number(result.maxUnits || 0);
+    wineBoatUnits = result.units || {};
+
+    for (let unit = 1; unit <= wineBoatMaxUnits; unit++) {
+      if (!Array.isArray(wineBoatUnits[String(unit)])) {
+        wineBoatUnits[String(unit)] = [];
+      }
+    }
+
+    renderWineBoatUnits();
+
+  } catch (error) {
+    console.error(error);
+
+    showMessage(
+      "wineBoatMessage",
+      "Could not load Wine Boat Storage.",
+      "error"
+    );
+  } finally {
+    if (spinner) spinner.style.display = "none";
+  }
+}
+
+function renderWineBoatUnits() {
+  const container = document.getElementById("wineBoatUnits");
+
+  if (!container) return;
+
+  container.innerHTML = "";
+
+  if (!wineBoatMaxUnits) {
+    container.innerHTML = `
+      <div class="card">
+        <p class="muted">No Wine Boat Storage units were found.</p>
+      </div>
+    `;
+    return;
+  }
+
+  for (let unit = 1; unit <= wineBoatMaxUnits; unit++) {
+    const entries = wineBoatUnits[String(unit)] || [];
+
+    const unitDiv = document.createElement("div");
+    unitDiv.className = "wine-boat-unit";
+
+    unitDiv.innerHTML = `
+      <div class="wine-boat-unit-header">
+        <div>
+          <h2 style="margin:0;">Storage Unit ${unit}</h2>
+          <div class="muted">
+            ${entries.length} product line(s)
+          </div>
+        </div>
+
+        <button class="primary" onclick="saveWineBoatUnit(${unit})">
+          Save Storage Unit ${unit}
+        </button>
+      </div>
+
+      <div class="wine-boat-search-wrap">
+        <label>Add Product</label>
+
+        <input
+          id="wineBoatSearch-${unit}"
+          placeholder="Search by Item No. or Description..."
+          autocomplete="off"
+          oninput="showWineBoatSuggestions(${unit}, this.value)"
+        />
+
+        <div
+          id="wineBoatSuggestions-${unit}"
+          class="wine-boat-suggestions"
+        ></div>
+      </div>
+
+      <div class="wine-boat-table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Item No.</th>
+              <th>Description</th>
+              <th>BPC</th>
+              <th>Cases</th>
+              <th>Loose Bottles</th>
+              <th>Total Bottles</th>
+              <th>Action</th>
+            </tr>
+          </thead>
+
+          <tbody id="wineBoatBody-${unit}"></tbody>
+        </table>
+      </div>
+
+      <div id="wineBoatUnitMessage-${unit}" class="message"></div>
+    `;
+
+    container.appendChild(unitDiv);
+
+    renderWineBoatUnitTable(unit);
+  }
+}
+
+function showWineBoatSuggestions(unit, query) {
+  const box = document.getElementById(`wineBoatSuggestions-${unit}`);
+
+  if (!box) return;
+
+  box.innerHTML = "";
+
+  const search = String(query || "").toLowerCase().trim();
+
+  if (!search) {
+    box.style.display = "none";
+    return;
+  }
+
+  const matches = inventory
+    .filter(item =>
+      String(item.itemNo || "").toLowerCase().includes(search) ||
+      String(item.description || "").toLowerCase().includes(search)
+    )
+    .slice(0, 20);
+
+  if (!matches.length) {
+    box.style.display = "none";
+    return;
+  }
+
+  matches.forEach(item => {
+    const option = document.createElement("div");
+    option.className = "wine-boat-suggestion";
+    option.textContent = `${item.itemNo} - ${item.description}`;
+
+    option.onmousedown = event => {
+      event.preventDefault();
+      addProductToWineBoat(unit, item);
+    };
+
+    box.appendChild(option);
+  });
+
+  box.style.display = "block";
+}
+
+function addProductToWineBoat(unit, item) {
+  const key = String(unit);
+  const entries = wineBoatUnits[key] || [];
+
+  const existing = entries.find(entry =>
+    String(entry.itemNo) === String(item.itemNo)
+  );
+
+  if (existing) {
+    showMessage(
+      `wineBoatUnitMessage-${unit}`,
+      "This product is already in the storage unit.",
+      "error"
+    );
+    return;
+  }
+
+  entries.push({
+    itemNo: item.itemNo || "",
+    description: item.description || "",
+    bpc: Number(item.bpc || 0),
+    cases: 0,
+    looseBottles: 0,
+    totalBottles: 0
+  });
+
+  wineBoatUnits[key] = entries;
+
+  const searchInput = document.getElementById(`wineBoatSearch-${unit}`);
+  const suggestions = document.getElementById(
+    `wineBoatSuggestions-${unit}`
+  );
+
+  if (searchInput) searchInput.value = "";
+  if (suggestions) suggestions.style.display = "none";
+
+  renderWineBoatUnitTable(unit);
+}
+
+function renderWineBoatUnitTable(unit) {
+  const tbody = document.getElementById(`wineBoatBody-${unit}`);
+
+  if (!tbody) return;
+
+  const entries = wineBoatUnits[String(unit)] || [];
+
+  tbody.innerHTML = "";
+
+  if (!entries.length) {
+    tbody.innerHTML = `
+      <tr>
+        <td colspan="7">This storage unit is empty.</td>
+      </tr>
+    `;
+    return;
+  }
+
+  entries.forEach((entry, index) => {
+    const bpc = Number(entry.bpc || 0);
+    const cases = Number(entry.cases || 0);
+    const loose = Number(entry.looseBottles || 0);
+
+    entry.totalBottles = bpc * cases + loose;
+
+    const tr = document.createElement("tr");
+
+    tr.innerHTML = `
+      <td>${entry.itemNo}</td>
+      <td>${entry.description}</td>
+
+      <td>
+        <input
+          type="number"
+          min="0"
+          value="${bpc}"
+          onchange="updateWineBoatEntry(${unit}, ${index}, 'bpc', this.value)"
+        />
+      </td>
+
+      <td>
+        <input
+          type="number"
+          min="0"
+          value="${cases}"
+          onchange="updateWineBoatEntry(${unit}, ${index}, 'cases', this.value)"
+        />
+      </td>
+
+      <td>
+        <input
+          type="number"
+          min="0"
+          value="${loose}"
+          onchange="updateWineBoatEntry(${unit}, ${index}, 'looseBottles', this.value)"
+        />
+      </td>
+
+      <td>${entry.totalBottles}</td>
+
+      <td>
+        <button
+          class="danger"
+          onclick="removeWineBoatEntry(${unit}, ${index})"
+        >
+          Remove
+        </button>
+      </td>
+    `;
+
+    tbody.appendChild(tr);
+  });
+}
+
+function updateWineBoatEntry(unit, index, field, value) {
+  const entry = wineBoatUnits[String(unit)][index];
+
+  if (!entry) return;
+
+  entry[field] = Number(value || 0);
+
+  renderWineBoatUnitTable(unit);
+}
+
+function removeWineBoatEntry(unit, index) {
+  wineBoatUnits[String(unit)].splice(index, 1);
+  renderWineBoatUnitTable(unit);
+}
+
+async function saveWineBoatUnit(unit) {
+  const entries = wineBoatUnits[String(unit)] || [];
+
+  try {
+    showMessage(
+      `wineBoatUnitMessage-${unit}`,
+      "Saving storage unit...",
+      ""
+    );
+
+    const response = await fetch(SCRIPT_URL, {
+      method: "POST",
+      body: JSON.stringify({
+        action: "saveWineBoatUnit",
+        storageUnit: unit,
+        entries,
+        updatedBy:
+          currentUser.name ||
+          currentUser.username ||
+          ""
+      })
+    });
+
+    const result = await response.json();
+
+    if (result.success) {
+      showMessage(
+        `wineBoatUnitMessage-${unit}`,
+        result.message,
+        "success"
+      );
+
+      await loadWineBoatStorage();
+    } else {
+      showMessage(
+        `wineBoatUnitMessage-${unit}`,
+        result.message,
+        "error"
+      );
+    }
+
+  } catch (error) {
+    console.error(error);
+
+    showMessage(
+      `wineBoatUnitMessage-${unit}`,
+      "Could not save this storage unit.",
+      "error"
+    );
+  }
+}
+
+
   
 </script>
 </body>
 </html>
+
