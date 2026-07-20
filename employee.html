@@ -1799,7 +1799,7 @@
 <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
 
 <script>
-const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbyDwbgcdqcsrSh0GIv0DT2Wi0JHuVrhROKwi9pYZNtf62MEx3lbqkGAEj2QXciVa9lc/exec";
+const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwXJ5Ez62YbP58WqLHbd13WU_nMnU86jj7Qr9PGuvxKvRHYIYUhHyWw9BwBQItipqs6/exec";
 
 let currentUser = null;
 let inventory = [];
@@ -6271,15 +6271,23 @@ function updateWineBoatEntry(unit, index, field, value) {
   renderWineBoatUnitTable(unit);
 }
 
-async function removeWineBoatEntry(unit, index) {
+function removeWineBoatEntry(unit, index) {
   if (!confirm("Remove this product from the storage unit?")) return;
 
-  wineBoatUnits[String(unit)].splice(index, 1);
+  const entries = wineBoatUnits[String(unit)] || [];
+
+  entries.splice(index, 1);
+  wineBoatUnits[String(unit)] = entries;
 
   renderWineBoatUnitTable(unit);
 
-  await saveWineBoatUnit(unit);
+  showMessage(
+    `wineBoatUnitMessage-${unit}`,
+    "Product removed. Click Save Storage Unit to confirm the changes.",
+    ""
+  );
 }
+
 
 async function saveWineBoatUnit(unit) {
   const entries = wineBoatUnits[String(unit)] || [];
