@@ -897,26 +897,98 @@
     .modal-overlay {
       position: fixed;
       inset: 0;
-      background: rgba(0,0,0,0.35);
+      background: rgba(0, 0, 0, 0.4);
       display: flex;
       align-items: center;
       justify-content: center;
       z-index: 9999;
+      padding: 20px;
     }
     
     .modal-card {
-      background: white;
-      border-radius: 14px;
-      padding: 22px;
-      width: min(460px, 90vw);
-      box-shadow: 0 12px 30px rgba(0,0,0,0.2);
+      background: #fff;
+      width: min(520px, 94vw);
+      border-radius: 18px;
+      padding: 24px;
+      box-shadow: 0 18px 45px rgba(0,0,0,0.18);
+    }
+    
+    .modal-card h3 {
+      margin: 0 0 6px;
+      font-size: 24px;
+      font-weight: 700;
+    }
+    
+    .modal-subtitle {
+      margin: 0 0 20px;
+      color: #6b7280;
+      font-size: 14px;
+    }
+    
+    .download-options {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
     }
     
     .download-option {
       display: flex;
       align-items: center;
-      gap: 8px;
-      margin: 10px 0;
+      gap: 14px;
+      padding: 14px 16px;
+      border: 1px solid #e5e7eb;
+      border-radius: 12px;
+      cursor: pointer;
+      transition: 0.15s ease;
+      background: #fff;
+    }
+    
+    .download-option:hover {
+      background: #f8fafc;
+      border-color: #cbd5e1;
+    }
+    
+    .download-option input[type="checkbox"] {
+      width: 18px;
+      height: 18px;
+      flex-shrink: 0;
+      margin: 0;
+      cursor: pointer;
+    }
+    
+    .download-option-text {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+      flex: 1;
+    }
+    
+    .download-option-title {
+      font-size: 15px;
+      font-weight: 600;
+      color: #111827;
+    }
+    
+    .download-option-count {
+      font-size: 13px;
+      color: #6b7280;
+    }
+    
+    .download-option.whole-week {
+      background: #f8fafc;
+      border: 2px solid #dbeafe;
+    }
+    
+    .download-option.disabled {
+      opacity: 0.45;
+      cursor: not-allowed;
+    }
+    
+    .modal-actions {
+      display: flex;
+      justify-content: flex-end;
+      gap: 10px;
+      margin-top: 22px;
     }
     
     @media (max-width: 800px) {
@@ -1355,15 +1427,28 @@
           <div class="modal-card">
             <h3>Download Weekly Buys</h3>
         
-            <div id="weeklyBuyDownloadOptions"></div>
+            <p class="modal-subtitle">
+              Select the whole week or choose one or more individual days.
+            </p>
         
-            <div style="margin-top:16px; display:flex; gap:10px;">
-              <button class="primary" onclick="downloadSelectedWeeklyBuyOptions()">
-                Download
+            <div
+              id="weeklyBuyDownloadOptions"
+              class="download-options"
+            ></div>
+        
+            <div class="modal-actions">
+              <button
+                class="secondary"
+                onclick="closeWeeklyBuyDownloadMenu()"
+              >
+                Cancel
               </button>
         
-              <button class="secondary" onclick="closeWeeklyBuyDownloadMenu()">
-                Cancel
+              <button
+                class="primary"
+                onclick="downloadSelectedWeeklyBuyOptions()"
+              >
+                Download Excel
               </button>
             </div>
           </div>
@@ -7587,16 +7672,23 @@ function openWeeklyBuyDownloadMenu() {
   ).length;
 
   let html = `
-    <label class="download-option">
+    <label class="download-option whole-week">
       <input
         type="checkbox"
         id="downloadWholeWeek"
         onchange="handleWholeWeekDownloadToggle()"
       >
-      Download the whole week (${totalItems} Items)
+  
+      <div class="download-option-text">
+        <div class="download-option-title">
+          Download the whole week
+        </div>
+  
+        <div class="download-option-count">
+          ${totalItems} ${totalItems === 1 ? "Item" : "Items"}
+        </div>
+      </div>
     </label>
-
-    <hr>
   `;
 
   days.forEach((dayName, index) => {
@@ -7612,14 +7704,23 @@ function openWeeklyBuyDownloadMenu() {
     ).length;
 
     html += `
-      <label class="download-option">
+      <label class="download-option weekly-buy-day-option">
         <input
           type="checkbox"
           class="weeklyBuyDayDownload"
           value="${isoDate}"
           onchange="handleDayDownloadToggle()"
         >
-        Download ${formatDateShort(date)} - ${dayName} (${itemCount} Items)
+    
+        <div class="download-option-text">
+          <div class="download-option-title">
+            ${formatDateShort(date)} · ${dayName}
+          </div>
+    
+          <div class="download-option-count">
+            ${itemCount} ${itemCount === 1 ? "Item" : "Items"}
+          </div>
+        </div>
       </label>
     `;
   });
