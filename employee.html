@@ -7433,7 +7433,7 @@ async function downloadWeeklyBuysExcelForEntries(entries, startDate, endDate) {
   worksheet.getCell(`I${totalRow}`).font = { bold: true };
 
   worksheet.getCell(`J${totalRow}`).value = {
-    formula: `SUM(J2:J${worksheet.rowCount})`
+    formula: `SUM(J2:J${worksheet.rowCount-1})`
   };
 
   worksheet.getCell(`J${totalRow}`).numFmt = "$0.00";
