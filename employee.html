@@ -1549,7 +1549,7 @@
   <div id="inventoryUpload" class="tab-section">
 
     <div class="card">
-      <h2>Inventory Upload</h2>
+      <h2>Inventory Upload - Limitless</h2>
       <p class="muted">
         Manager-only tool. Upload an .xls, .xlsx, or .csv file with headers matching the Inventory tab.
       </p>
@@ -1561,6 +1561,33 @@
       <div id="inventoryUploadMessage" class="message"></div>
     </div>
 
+    <div class="card" style="margin-top: 20px;">
+      <h3>Inventory Upload - Magstar</h3>
+    
+      <p>
+        Upload a Magstar inventory XML file.
+      </p>
+    
+      <input
+        type="file"
+        id="magstarInventoryFile"
+        accept=".xml"
+      >
+    
+      <button
+        type="button"
+        onclick="uploadMagstarInventory()"
+        style="margin-top: 10px;"
+      >
+        Upload Magstar Inventory
+      </button>
+    
+      <div
+        id="magstarInventoryMessage"
+        style="margin-top: 10px;"
+      ></div>
+    </div>
+    
     <div class="card">
       <h2>Barcode Upload</h2>
       <p class="muted">
@@ -1799,7 +1826,7 @@
 <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
 
 <script>
-const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwXJ5Ez62YbP58WqLHbd13WU_nMnU86jj7Qr9PGuvxKvRHYIYUhHyWw9BwBQItipqs6/exec";
+const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbx390zLsFgp8a4I2aFeHLWRgp5H80hLaKxU6mkDwKN8j7X4dN1acuzedKUrCo_D80k1/exec";
 
 let currentUser = null;
 let inventory = [];
@@ -7315,6 +7342,184 @@ async function downloadWeeklyBuysExcel() {
 
   URL.revokeObjectURL(objectUrl);
 }
+
+async function uploadMagstarInventory() {
+  const fileInput = document.getElementById("magstarInventoryFile");
+  const message = document.getElementById("magstarInventoryMessage");
+
+  if (!fileInput.files.length) {
+    message.textContent = "Please select a Magstar XML file.";
+    return;
+  }
+
+  const file = fileInput.files[0];
+
+  if (!file.name.toLowerCase().endsWith(".xml")) {
+    message.textContent = "Please upload a .xml file.";
+    return;
+  }
+
+  try {
+    message.textContent = "Reading Magstar inventory...";
+
+    const xmlText = await file.text();
+
+    const rows = parseMagstarInventoryXml(xmlText);
+
+    if (!rows.length) {
+      message.textContent =
+        "No inventory rows were found in the Magstar file.";
+      return;
+    }
+
+    message.textContent =
+      `Uploading ${rows.length} inventory rows...`;
+
+    const response = await fetch(SCRIPT_URL, {
+      method: "POST",
+      body: JSON.stringify({
+        action: "replaceMagstarInventory",
+        rows: rows
+      })
+    });
+
+    const result = await response.json();
+
+    if (!result.success) {
+      message.textContent =
+        result.message || "Magstar inventory upload failed.";
+      return;
+    }
+
+    message.textContent =
+      `Magstar inventory uploaded successfully. ${rows.length} rows imported.`;
+
+    fileInput.value = "";
+
+  } catch (error) {
+    console.error(error);
+
+    message.textContent =
+      "There was an error processing the Magstar inventory file.";
+  }
+}
+
+function parseMagstarInventoryXml(xmlText) {
+  const parser = new DOMParser();
+  const xml = parser.parseFromString(xmlText, "application/xml");
+
+  const parserError = xml.querySelector("parsererror");
+
+  if (parserError) {
+    throw new Error("Invalid XML file.");
+  }
+
+  const rowElements = Array.from(
+    xml.getElementsByTagNameNS("*", "Row")
+  );
+
+  const output = [];
+
+  /*
+   * Magstar data starts on Excel row 3,
+   * so skip rows 1 and 2.
+   */
+  rowElements.slice(2).forEach(rowElement => {
+    const cells = getMagstarXmlRowCells(rowElement);
+
+    // Excel columns are zero-based here:
+    // B = 1
+    // C = 2
+    // H = 7
+    // P = 15
+    // Q = 16
+
+    const itemNo = cells[2] ?? "";       // C
+    const description = cells[1] ?? "";  // B
+    const inventoryC = cells[16] ?? "";  // Q
+    const inventoryF = cells[7] ?? "";   // H
+    const inventoryG = cells[15] ?? "";  // P
+
+    /*
+     * Ignore completely empty rows.
+     */
+    if (
+      String(itemNo).trim() === "" &&
+      String(description).trim() === ""
+    ) {
+      return;
+    }
+
+    /*
+     * Produce A:O for the Inventory sheet.
+     *
+     * A <- C
+     * B <- B
+     * C <- Q
+     * F <- H
+     * G <- P
+     */
+
+    output.push([
+      itemNo,        // A
+      description,   // B
+      inventoryC,    // C
+      "",            // D
+      "",            // E
+      inventoryF,    // F
+      inventoryG,    // G
+      "",            // H
+      "",            // I
+      "",            // J
+      "",            // K
+      "",            // L
+      "",            // M
+      "",            // N
+      ""             // O
+    ]);
+  });
+
+  return output;
+}
+
+function getMagstarXmlRowCells(rowElement) {
+  const cells = Array.from(rowElement.children).filter(
+    element => element.localName === "Cell"
+  );
+
+  const values = [];
+  let columnIndex = 0;
+
+  cells.forEach(cell => {
+    /*
+     * Excel XML may omit blank cells and instead use
+     * ss:Index="5", etc.
+     */
+    const indexAttribute =
+      cell.getAttribute("ss:Index") ||
+      cell.getAttributeNS(
+        "urn:schemas-microsoft-com:office:spreadsheet",
+        "Index"
+      );
+
+    if (indexAttribute) {
+      columnIndex = Number(indexAttribute) - 1;
+    }
+
+    const dataElement = Array.from(cell.children).find(
+      child => child.localName === "Data"
+    );
+
+    values[columnIndex] =
+      dataElement ? dataElement.textContent : "";
+
+    columnIndex++;
+  });
+
+  return values;
+}
+
+  
   
 </script>
 </body>
