@@ -7439,6 +7439,7 @@ function parseMagstarInventoryXml(xmlText) {
     const inventoryC = cells[16] ?? "";  // Q
     const inventoryF = cells[7] ?? "";   // H
     const inventoryG = cells[15] ?? "";  // P
+    const inventoryH = cells[8] ?? ""; // I
 
     /*
      * Ignore completely empty rows.
@@ -7468,7 +7469,7 @@ function parseMagstarInventoryXml(xmlText) {
       "",            // E
       inventoryF,    // F
       inventoryG,    // G
-      "",            // H
+      inventoryH,    // H
       "",            // I
       "",            // J
       "",            // K
