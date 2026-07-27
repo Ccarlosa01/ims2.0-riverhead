@@ -893,6 +893,31 @@
     .global-weekly-buy-suggestion:hover {
       background: #f0f4ff;
     }
+
+    .modal-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.35);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 9999;
+    }
+    
+    .modal-card {
+      background: white;
+      border-radius: 14px;
+      padding: 22px;
+      width: min(460px, 90vw);
+      box-shadow: 0 12px 30px rgba(0,0,0,0.2);
+    }
+    
+    .download-option {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin: 10px 0;
+    }
     
     @media (max-width: 800px) {
       .weekly-buys-controls {
@@ -1322,9 +1347,28 @@
           Save Weekly Buys
         </button>
         
-        <button class="secondary" onclick="downloadWeeklyBuysExcel()">
+        <button class="secondary" onclick="openWeeklyBuyDownloadMenu()">
           Download Selected Week Excel
         </button>
+        
+        <div id="weeklyBuyDownloadModal" class="modal-overlay" style="display:none;">
+          <div class="modal-card">
+            <h3>Download Weekly Buys</h3>
+        
+            <div id="weeklyBuyDownloadOptions"></div>
+        
+            <div style="margin-top:16px; display:flex; gap:10px;">
+              <button class="primary" onclick="downloadSelectedWeeklyBuyOptions()">
+                Download
+              </button>
+        
+              <button class="secondary" onclick="closeWeeklyBuyDownloadMenu()">
+                Cancel
+              </button>
+            </div>
+          </div>
+        </div>
+        
       </div>
     </div>
   
@@ -7194,35 +7238,58 @@ async function saveMissingProductBPC(itemNo, bpc) {
   }
 }
 
-async function downloadWeeklyBuysExcel() {
-  if (!weeklyBuysWeekStart || !weeklyBuysWeekEnd) {
-    showMessage(
-      "weeklyBuysMessage",
-      "Please select a week first.",
-      "error"
-    );
+function downloadSelectedWeeklyBuyOptions() {
+  const wholeWeek = document.getElementById("downloadWholeWeek");
+
+  const selectedDays = Array.from(
+    document.querySelectorAll(".weeklyBuyDayDownload:checked")
+  ).map(box => box.value);
+
+  if (!wholeWeek.checked && selectedDays.length === 0) {
+    alert("Please select the whole week or at least one day.");
     return;
   }
 
-  const validEntries = weeklyBuysEntries.filter(entry =>
+  if (wholeWeek.checked) {
+    downloadWeeklyBuysExcelForEntries(
+      weeklyBuysEntries,
+      weeklyBuysWeekStart,
+      weeklyBuysWeekEnd
+    );
+
+    closeWeeklyBuyDownloadMenu();
+    return;
+  }
+
+  const filteredEntries = weeklyBuysEntries.filter(entry =>
+    selectedDays.includes(entry.orderedDate)
+  );
+
+  downloadWeeklyBuysExcelForEntries(
+    filteredEntries,
+    selectedDays[0],
+    selectedDays[selectedDays.length - 1]
+  );
+
+  closeWeeklyBuyDownloadMenu();
+}
+
+async function downloadWeeklyBuysExcelForEntries(entries, startDate, endDate) {
+  const validEntries = entries.filter(entry =>
     entry.itemNo &&
     entry.description &&
     entry.orderedDate
   );
 
   if (!validEntries.length) {
-    showMessage(
-      "weeklyBuysMessage",
-      "No Weekly Buys were found for the selected week.",
-      "error"
-    );
+    alert("No Weekly Buys found for the selected option.");
     return;
   }
 
   const workbook = new ExcelJS.Workbook();
   const worksheet = workbook.addWorksheet("Weekly Buys");
 
-  const headers = [
+  worksheet.addRow([
     "Week Start",
     "Week End",
     "Ordered Date",
@@ -7234,9 +7301,7 @@ async function downloadWeeklyBuysExcel() {
     "Cases Ordered",
     "$ Total",
     "Notes"
-  ];
-
-  worksheet.addRow(headers);
+  ]);
 
   validEntries.forEach(entry => {
     const hasNewCost =
@@ -7268,80 +7333,51 @@ async function downloadWeeklyBuysExcel() {
     ]);
   });
 
-  const headerRow = worksheet.getRow(1);
+  worksheet.getRow(1).font = { bold: true };
 
-  headerRow.font = {
-    bold: true
-  };
-
-  headerRow.fill = {
-    type: "pattern",
-    pattern: "solid",
-    fgColor: {
-      argb: "FFF4F6F8"
-    }
-  };
-
-  worksheet.getColumn(1).width = 14;
-  worksheet.getColumn(2).width = 14;
-  worksheet.getColumn(3).width = 14;
-  worksheet.getColumn(4).width = 14;
   worksheet.getColumn(5).width = 35;
-  worksheet.getColumn(6).width = 10;
-  worksheet.getColumn(7).width = 12;
-  worksheet.getColumn(8).width = 14;
-  worksheet.getColumn(9).width = 16;
-  worksheet.getColumn(10).width = 14;
   worksheet.getColumn(11).width = 35;
 
   worksheet.getColumn(7).numFmt = "$0.00";
   worksheet.getColumn(8).numFmt = "$0.00";
   worksheet.getColumn(10).numFmt = "$0.00";
 
-  worksheet.views = [
-    {
-      state: "frozen",
-      ySplit: 1
-    }
-  ];
+  const totalRow = worksheet.rowCount + 2;
 
-  const totalRowNumber = worksheet.rowCount + 2;
+  worksheet.getCell(`I${totalRow}`).value = "Total Cost:";
+  worksheet.getCell(`I${totalRow}`).font = { bold: true };
 
-  worksheet.getCell(`I${totalRowNumber}`).value = "Total Cost:";
-  worksheet.getCell(`I${totalRowNumber}`).font = {
-    bold: true
+  worksheet.getCell(`J${totalRow}`).value = {
+    formula: `SUM(J2:J${worksheet.rowCount})`
   };
 
-  worksheet.getCell(`J${totalRowNumber}`).value = {
-    formula: `SUM(J2:J${worksheet.rowCount-1})`
-  };
-
-  worksheet.getCell(`J${totalRowNumber}`).numFmt = "$0.00";
-  worksheet.getCell(`J${totalRowNumber}`).font = {
-    bold: true
-  };
+  worksheet.getCell(`J${totalRow}`).numFmt = "$0.00";
+  worksheet.getCell(`J${totalRow}`).font = { bold: true };
 
   const buffer = await workbook.xlsx.writeBuffer();
 
-  const blob = new Blob(
-    [buffer],
-    {
-      type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
-    }
-  );
+  const blob = new Blob([buffer], {
+    type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+  });
 
   const link = document.createElement("a");
-  const objectUrl = URL.createObjectURL(blob);
+  const url = URL.createObjectURL(blob);
 
-  link.href = objectUrl;
-  link.download =
-    `EHP Liquors-weekly-buys-${weeklyBuysWeekStart}-to-${weeklyBuysWeekEnd}.xlsx`;
+  link.href = url;
+
+  if (startDate === weeklyBuysWeekStart && endDate === weeklyBuysWeekEnd) {
+    link.download =
+      `weekly-buys-${weeklyBuysWeekStart}-to-${weeklyBuysWeekEnd}.xlsx`;
+  } else {
+    link.download =
+      `weekly-buys-${startDate}-to-${endDate}.xlsx`;
+  }
 
   document.body.appendChild(link);
   link.click();
-  document.body.removeChild(link);
+  link.remove();
 
-  URL.revokeObjectURL(objectUrl);
+  URL.revokeObjectURL(url);
 }
 
 async function uploadMagstarInventory() {
@@ -7521,7 +7557,126 @@ function getMagstarXmlRowCells(rowElement) {
   return values;
 }
 
-  
+function openWeeklyBuyDownloadMenu() {
+  if (!weeklyBuysWeekStart || !weeklyBuysWeekEnd) {
+    showMessage(
+      "weeklyBuysMessage",
+      "Please select a week first.",
+      "error"
+    );
+    return;
+  }
+
+  const modal = document.getElementById("weeklyBuyDownloadModal");
+  const container = document.getElementById("weeklyBuyDownloadOptions");
+
+  const start = new Date(weeklyBuysWeekStart + "T00:00:00");
+
+  const days = [
+    "Monday",
+    "Tuesday",
+    "Wednesday",
+    "Thursday",
+    "Friday"
+  ];
+
+  const totalItems = weeklyBuysEntries.filter(entry =>
+    entry.itemNo &&
+    entry.description &&
+    entry.orderedDate
+  ).length;
+
+  let html = `
+    <label class="download-option">
+      <input
+        type="checkbox"
+        id="downloadWholeWeek"
+        onchange="handleWholeWeekDownloadToggle()"
+      >
+      Download the whole week (${totalItems} Items)
+    </label>
+
+    <hr>
+  `;
+
+  days.forEach((dayName, index) => {
+    const date = new Date(start);
+    date.setDate(start.getDate() + index);
+
+    const isoDate = formatDateISO(date);
+
+    const itemCount = weeklyBuysEntries.filter(entry =>
+      entry.orderedDate === isoDate &&
+      entry.itemNo &&
+      entry.description
+    ).length;
+
+    html += `
+      <label class="download-option">
+        <input
+          type="checkbox"
+          class="weeklyBuyDayDownload"
+          value="${isoDate}"
+          onchange="handleDayDownloadToggle()"
+        >
+        Download ${formatDateShort(date)} - ${dayName} (${itemCount} Items)
+      </label>
+    `;
+  });
+
+  container.innerHTML = html;
+  modal.style.display = "flex";
+}
+
+function closeWeeklyBuyDownloadMenu() {
+  document.getElementById("weeklyBuyDownloadModal").style.display = "none";
+}
+
+function handleWholeWeekDownloadToggle() {
+  const wholeWeek = document.getElementById("downloadWholeWeek");
+  const dayBoxes = document.querySelectorAll(".weeklyBuyDayDownload");
+
+  dayBoxes.forEach(box => {
+    box.disabled = wholeWeek.checked;
+
+    if (wholeWeek.checked) {
+      box.checked = false;
+    }
+  });
+}
+
+function handleDayDownloadToggle() {
+  const wholeWeek = document.getElementById("downloadWholeWeek");
+  const dayBoxes = Array.from(
+    document.querySelectorAll(".weeklyBuyDayDownload")
+  );
+
+  const anyDaySelected = dayBoxes.some(box => box.checked);
+
+  wholeWeek.disabled = anyDaySelected;
+
+  if (anyDaySelected) {
+    wholeWeek.checked = false;
+  }
+}
+
+function formatDateShort(date) {
+  return date.toLocaleDateString("en-US", {
+    month: "2-digit",
+    day: "2-digit",
+    year: "2-digit"
+  });
+}
+
+function formatDateISO(date) {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+
+  return `${year}-${month}-${day}`;
+}
+
+
   
 </script>
 </body>
