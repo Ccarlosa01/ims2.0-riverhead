@@ -1956,7 +1956,7 @@
 <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
 
 <script>
-const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbx390zLsFgp8a4I2aFeHLWRgp5H80hLaKxU6mkDwKN8j7X4dN1acuzedKUrCo_D80k1/exec";
+const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbw8y6z4nTn1Wm3bGavzUwAjqgoNM6-PkpRVNL4UL_-xnkDKhDsEKrfkenALl7L5RYGG/exec";
 
 let currentUser = null;
 let inventory = [];
@@ -3624,23 +3624,29 @@ function stopInventoryScanner() {
 }
 
 function handleInventoryBarcode(scannedCode) {
-  const code = String(scannedCode || "").trim();
+  const normalizedScannedCode = normalizeBarcode(scannedCode);
 
   const barcodeMatch = barcodeData.find(row =>
-    String(row.barcode || "").trim() === code
+    normalizeBarcode(row.barcode) === normalizedScannedCode
   );
 
+  const itemNoInput =
+    document.getElementById("inventoryEntryItemNo");
+
   if (!barcodeMatch || !barcodeMatch.itemNo) {
-    document.getElementById("inventoryEntryItemNo").value = "";
+    itemNoInput.value = "";
+
     showMessage(
       "inventoryEntryProductInfo",
-      `No Item No. found for barcode ${code}. Please enter Item No. manually.`,
+      `No Item No. was found for barcode ${scannedCode}. Please enter the Item No. manually.`,
       "error"
     );
+
     return;
   }
 
-  document.getElementById("inventoryEntryItemNo").value = barcodeMatch.itemNo;
+  // Display the corresponding Item No., never the scanned barcode.
+  itemNoInput.value = String(barcodeMatch.itemNo).trim();
 
   showMessage(
     "inventoryEntryProductInfo",
@@ -3728,6 +3734,41 @@ async function uploadBarcodeFile() {
     });
 
     if (!rows.length) {
+      showMessage(
+        "barcodeUploadMessage",
+        "The uploaded barcode file is empty.",
+        "error"
+      );
+      return;
+    }
+    
+    const headers = rows[0].map(header =>
+      String(header || "").trim().toLowerCase()
+    );
+    
+    const barcodeColumnIndex = headers.indexOf("barcode");
+    
+    if (barcodeColumnIndex === -1) {
+      showMessage(
+        "barcodeUploadMessage",
+        'The uploaded file must contain a "barcode" header.',
+        "error"
+      );
+      return;
+    }
+    
+    const cleanedRows = rows.map((row, rowIndex) => {
+      const cleanedRow = [...row];
+    
+      if (rowIndex > 0 && cleanedRow[barcodeColumnIndex] !== "") {
+        cleanedRow[barcodeColumnIndex] =
+          normalizeBarcode(cleanedRow[barcodeColumnIndex]);
+      }
+    
+      return cleanedRow;
+    });
+
+    if (!rows.length) {
       showMessage("barcodeUploadMessage", "The uploaded barcode file is empty.", "error");
       return;
     }
@@ -3736,7 +3777,7 @@ async function uploadBarcodeFile() {
       method: "POST",
       body: JSON.stringify({
         action: "replaceBarcodes",
-        rows
+        rows: cleanedRows
       })
     });
 
@@ -7777,7 +7818,15 @@ function formatDateISO(date) {
   return `${year}-${month}-${day}`;
 }
 
+function normalizeBarcode(value) {
+  const digitsOnly = String(value || "")
+    .trim()
+    .replace(/\D/g, "");
 
+  const withoutLeadingZeros = digitsOnly.replace(/^0+/, "");
+
+  return withoutLeadingZeros || "0";
+}
   
 </script>
 </body>
