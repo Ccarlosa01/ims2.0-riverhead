@@ -2118,10 +2118,10 @@
     <div class="card">
       <h2>Inventory Upload - Magstar</h2>
       <p class="muted">
-        Manager-only tool. Upload a Magstar .xlsx file.
+        Manager-only tool. Upload a Magstar .xlsx, .xls, or .xml file.
       </p>
     
-      <input type="file" id="magstarInventoryFile" accept=".xlsx,.xls" />
+      <input type="file" id="magstarInventoryFile" accept=".xlsx,.xls,.xml" />
     
       <button type="button" class="primary" onclick="uploadMagstarInventory()">
         Upload Magstar Inventory
@@ -2381,7 +2381,7 @@
         Inventory items not found in this report will be set to 0 Qty On PO.
       </p>
 
-      <input type="file" id="magstarBHFile" accept=".xlsx,.xls" />
+      <input type="file" id="magstarBHFile" accept=".xlsx,.xls,.xml" />
 
       <div class="magstar-bh-actions">
         <button type="button" class="secondary" onclick="closeMagstarBHModal()">Cancel</button>
@@ -8443,6 +8443,203 @@ async function downloadWeeklyBuysExcelForEntries(entries, startDate, endDate) {
   URL.revokeObjectURL(url);
 }
 
+
+function getSpreadsheetXmlRows(xmlText) {
+  const parser = new DOMParser();
+  const xml = parser.parseFromString(xmlText, "application/xml");
+
+  const parserError = xml.querySelector("parsererror");
+
+  if (parserError) {
+    throw new Error("Invalid XML file.");
+  }
+
+  const rowElements = Array.from(
+    xml.getElementsByTagNameNS("*", "Row")
+  );
+
+  return rowElements.map(rowElement =>
+    getSpreadsheetXmlRowCells(rowElement)
+  );
+}
+
+function getSpreadsheetXmlRowCells(rowElement) {
+  const cells = Array.from(rowElement.children).filter(
+    element => element.localName === "Cell"
+  );
+
+  const values = [];
+  let columnIndex = 0;
+
+  cells.forEach(cell => {
+    const indexAttribute =
+      cell.getAttribute("ss:Index") ||
+      cell.getAttributeNS(
+        "urn:schemas-microsoft-com:office:spreadsheet",
+        "Index"
+      );
+
+    if (indexAttribute) {
+      columnIndex = Number(indexAttribute) - 1;
+    }
+
+    const dataElement = Array.from(cell.children).find(
+      child => child.localName === "Data"
+    );
+
+    values[columnIndex] =
+      dataElement ? dataElement.textContent : "";
+
+    columnIndex++;
+  });
+
+  return values;
+}
+
+function buildModernMagstarInventoryRows(sheetRows) {
+  if (sheetRows.length < 3) {
+    throw new Error("The Magstar file does not contain inventory rows.");
+  }
+
+  const headers = sheetRows[1].map(value =>
+    String(value ?? "").trim()
+  );
+
+  const expectedHeaders = [
+    "Item Number",
+    "SKU/UPC",
+    "Description",
+    "Location",
+    "Zone/List Price",
+    "WAC",
+    "Qty On Hand",
+    "GPM%"
+  ];
+
+  const headersValid = expectedHeaders.every(
+    (header, index) => headers[index] === header
+  );
+
+  if (!headersValid) {
+    return null;
+  }
+
+  return sheetRows
+    .slice(2)
+    .filter(row => {
+      const sku = String(row[1] ?? "").trim();
+      const description = String(row[2] ?? "").trim();
+      return sku || description;
+    })
+    .map(row => [
+      "",             // A
+      row[1] ?? "",   // B - Item No. <- SKU/UPC
+      row[2] ?? "",   // C - Description
+      "",             // D
+      "",             // E
+      row[6] ?? "",   // F - Qty On Hand
+      "",             // G
+      row[5] ?? "",   // H - Avg Cost / WAC
+      row[4] ?? "",   // I - Base Price
+      "",             // J
+      row[7] ?? ""    // K - Gross M %
+    ]);
+}
+
+function buildLegacyC2MagstarXmlRows(sheetRows) {
+  const output = [];
+
+  /*
+   * Legacy C2 Spreadsheet XML export:
+   * data begins on XML row 3.
+   *
+   * C -> Inventory A
+   * B -> Inventory B
+   * Q -> Inventory C
+   * H -> Inventory F
+   * P -> Inventory G
+   * I -> Inventory H
+   */
+  sheetRows.slice(2).forEach(cells => {
+    const itemNo = cells[2] ?? "";
+    const description = cells[1] ?? "";
+    const inventoryC = cells[16] ?? "";
+    const inventoryF = cells[7] ?? "";
+    const inventoryG = cells[15] ?? "";
+    const inventoryH = cells[8] ?? "";
+
+    if (
+      String(itemNo).trim() === "" &&
+      String(description).trim() === ""
+    ) {
+      return;
+    }
+
+    output.push([
+      itemNo,        // A
+      description,   // B
+      inventoryC,    // C
+      "",            // D
+      "",            // E
+      inventoryF,    // F
+      inventoryG,    // G
+      inventoryH,    // H
+      "",            // I
+      "",            // J
+      ""             // K
+    ]);
+  });
+
+  return output;
+}
+
+function buildMagstarBHRows(sheetRows) {
+  if (sheetRows.length < 3) {
+    throw new Error(
+      "The Magstar B&H report does not contain inventory rows."
+    );
+  }
+
+  const headers = sheetRows[1].map(value =>
+    String(value ?? "").trim()
+  );
+
+  const expectedHeaders = [
+    "Item Number",
+    "SKU/UPC",
+    "Description",
+    "Location",
+    "Zone/List Price",
+    "WAC",
+    "Qty On Hand",
+    "GPM%"
+  ];
+
+  const headersValid = expectedHeaders.every(
+    (header, index) => headers[index] === header
+  );
+
+  if (!headersValid) {
+    throw new Error(
+      "The uploaded file does not match the expected Magstar B&H report format."
+    );
+  }
+
+  return sheetRows
+    .slice(2)
+    .filter(row => {
+      const itemNumber = String(row[0] ?? "").trim();
+      const skuUpc = String(row[1] ?? "").trim();
+      return itemNumber || skuUpc;
+    })
+    .map(row => ({
+      itemNumber: row[0] ?? "",
+      skuUpc: row[1] ?? "",
+      qtyOnHand: row[6] ?? 0
+    }));
+}
+
+
 async function uploadMagstarInventory() {
   const fileInput = document.getElementById("magstarInventoryFile");
   const file = fileInput.files[0];
@@ -8465,6 +8662,21 @@ async function uploadMagstarInventory() {
     return;
   }
 
+  const fileName = String(file.name || "").toLowerCase();
+
+  if (
+    !fileName.endsWith(".xlsx") &&
+    !fileName.endsWith(".xls") &&
+    !fileName.endsWith(".xml")
+  ) {
+    showMessage(
+      "magstarInventoryMessage",
+      "Please upload a Magstar .xlsx, .xls, or .xml file.",
+      "error"
+    );
+    return;
+  }
+
   try {
     showMessage(
       "magstarInventoryMessage",
@@ -8472,108 +8684,56 @@ async function uploadMagstarInventory() {
       ""
     );
 
-    const data = await file.arrayBuffer();
+    let rows = [];
 
-    const workbook = XLSX.read(data, {
-      type: "array"
-    });
+    if (fileName.endsWith(".xml")) {
+      const xmlText = await file.text();
+      const sheetRows = getSpreadsheetXmlRows(xmlText);
 
-    const worksheet = workbook.Sheets[workbook.SheetNames[0]];
+      /*
+       * First try the newer A:H Magstar structure.
+       * If it is not that format, fall back to the original
+       * legacy C2 Spreadsheet XML mapping.
+       */
+      const modernRows =
+        buildModernMagstarInventoryRows(sheetRows);
 
-    /*
-     * Read the worksheet as a raw 2D array.
-     * Row 1 = report title
-     * Row 2 = headers
-     * Row 3+ = inventory
-     */
-    const sheetRows = XLSX.utils.sheet_to_json(
-      worksheet,
-      {
-        header: 1,
-        defval: ""
-      }
-    );
+      rows = modernRows !== null
+        ? modernRows
+        : buildLegacyC2MagstarXmlRows(sheetRows);
 
-    if (sheetRows.length < 3) {
-      showMessage(
-        "magstarInventoryMessage",
-        "The Magstar file does not contain inventory rows.",
-        "error"
-      );
-      return;
-    }
+    } else {
+      const data = await file.arrayBuffer();
 
-    /*
-     * Validate row 2 headers.
-     */
-    const headers = sheetRows[1].map(value =>
-      String(value || "").trim()
-    );
-
-    const expectedHeaders = [
-      "Item Number",
-      "SKU/UPC",
-      "Description",
-      "Location",
-      "Zone/List Price",
-      "WAC",
-      "Qty On Hand",
-      "GPM%"
-    ];
-
-    const headersValid = expectedHeaders.every(
-      (header, index) =>
-        headers[index] === header
-    );
-
-    if (!headersValid) {
-      showMessage(
-        "magstarInventoryMessage",
-        "The uploaded file does not match the expected Magstar inventory format.",
-        "error"
-      );
-      return;
-    }
-
-    /*
-     * Data begins on Excel row 3.
-     */
-    const sourceRows = sheetRows.slice(2);
-
-    const rows = sourceRows
-      .filter(row => {
-        const sku = String(row[1] ?? "").trim();
-        const description = String(row[2] ?? "").trim();
-
-        return sku || description;
-      })
-      .map(row => {
-
-        /*
-         * Create Inventory A:K.
-         *
-         * Excel B -> Inventory B
-         * Excel C -> Inventory C
-         * Excel G -> Inventory F
-         * Excel F -> Inventory H
-         * Excel E -> Inventory I
-         * Excel H -> Inventory K
-         */
-
-        return [
-          "",             // A
-          row[1] ?? "",   // B - Item No. <- SKU/UPC
-          row[2] ?? "",   // C - Description
-          "",             // D
-          "",             // E
-          row[6] ?? "",   // F - Qty On Hand
-          "",             // G
-          row[5] ?? "",   // H - Avg Cost / WAC
-          row[4] ?? "",   // I - Base Price
-          "",             // J
-          row[7] ?? ""    // K - Gross M %
-        ];
+      const workbook = XLSX.read(data, {
+        type: "array"
       });
+
+      const worksheet =
+        workbook.Sheets[workbook.SheetNames[0]];
+
+      const sheetRows = XLSX.utils.sheet_to_json(
+        worksheet,
+        {
+          header: 1,
+          defval: ""
+        }
+      );
+
+      const modernRows =
+        buildModernMagstarInventoryRows(sheetRows);
+
+      if (modernRows === null) {
+        showMessage(
+          "magstarInventoryMessage",
+          "The uploaded file does not match the expected Magstar inventory format.",
+          "error"
+        );
+        return;
+      }
+
+      rows = modernRows;
+    }
 
     if (!rows.length) {
       showMessage(
@@ -8594,7 +8754,7 @@ async function uploadMagstarInventory() {
       method: "POST",
       body: JSON.stringify({
         action: "replaceMagstarInventory",
-        rows: rows
+        rows
       })
     });
 
@@ -8606,7 +8766,6 @@ async function uploadMagstarInventory() {
         result.message || "Magstar inventory upload failed.",
         "error"
       );
-
       return;
     }
 
@@ -8618,12 +8777,13 @@ async function uploadMagstarInventory() {
 
     fileInput.value = "";
 
-    /*
-     * Refresh app inventory after replacing it.
-     */
     await loadInventory();
 
-    /* Final C2 Magstar step: upload B&H report. */
+    /*
+     * Continue with the same B&H follow-up workflow
+     * regardless of whether the main Magstar file was
+     * Excel or XML.
+     */
     showMagstarBHModal();
 
   } catch (error) {
@@ -8631,7 +8791,9 @@ async function uploadMagstarInventory() {
 
     showMessage(
       "magstarInventoryMessage",
-      "There was an error processing the Magstar inventory file.",
+      error && error.message
+        ? error.message
+        : "There was an error processing the Magstar inventory file.",
       "error"
     );
   }
@@ -8665,14 +8827,13 @@ function closeMagstarBHModal() {
 
 async function uploadMagstarBHReport() {
   const fileInput = document.getElementById("magstarBHFile");
-  const message = document.getElementById("magstarBHMessage");
   const uploadBtn = document.getElementById("uploadMagstarBHBtn");
   const file = fileInput.files[0];
 
   if (!file) {
     showMessage(
       "magstarBHMessage",
-      "Please choose the Magstar B&H report first.",
+      "Please choose a Magstar B&H report first.",
       "error"
     );
     return;
@@ -8682,6 +8843,21 @@ async function uploadMagstarBHReport() {
     showMessage(
       "magstarBHMessage",
       "Only managers can upload the Magstar B&H report.",
+      "error"
+    );
+    return;
+  }
+
+  const fileName = String(file.name || "").toLowerCase();
+
+  if (
+    !fileName.endsWith(".xlsx") &&
+    !fileName.endsWith(".xls") &&
+    !fileName.endsWith(".xml")
+  ) {
+    showMessage(
+      "magstarBHMessage",
+      "Please upload a Magstar B&H .xlsx, .xls, or .xml file.",
       "error"
     );
     return;
@@ -8697,71 +8873,27 @@ async function uploadMagstarBHReport() {
       ""
     );
 
-    const data = await file.arrayBuffer();
-    const workbook = XLSX.read(data, { type: "array" });
-    const worksheet = workbook.Sheets[workbook.SheetNames[0]];
+    let sheetRows = [];
 
-    const sheetRows = XLSX.utils.sheet_to_json(
-      worksheet,
-      {
-        header: 1,
-        defval: ""
-      }
-    );
+    if (fileName.endsWith(".xml")) {
+      const xmlText = await file.text();
+      sheetRows = getSpreadsheetXmlRows(xmlText);
+    } else {
+      const data = await file.arrayBuffer();
+      const workbook = XLSX.read(data, { type: "array" });
+      const worksheet =
+        workbook.Sheets[workbook.SheetNames[0]];
 
-    if (sheetRows.length < 3) {
-      showMessage(
-        "magstarBHMessage",
-        "The Magstar B&H report does not contain inventory rows.",
-        "error"
+      sheetRows = XLSX.utils.sheet_to_json(
+        worksheet,
+        {
+          header: 1,
+          defval: ""
+        }
       );
-      uploadBtn.disabled = false;
-      uploadBtn.textContent = "Upload B&H Report";
-      return;
     }
 
-    const headers = sheetRows[1].map(value =>
-      String(value ?? "").trim()
-    );
-
-    const expectedHeaders = [
-      "Item Number",
-      "SKU/UPC",
-      "Description",
-      "Location",
-      "Zone/List Price",
-      "WAC",
-      "Qty On Hand",
-      "GPM%"
-    ];
-
-    const headersValid = expectedHeaders.every(
-      (header, index) => headers[index] === header
-    );
-
-    if (!headersValid) {
-      showMessage(
-        "magstarBHMessage",
-        "The uploaded file does not match the expected Magstar B&H report format.",
-        "error"
-      );
-      uploadBtn.disabled = false;
-      uploadBtn.textContent = "Upload B&H Report";
-      return;
-    }
-
-    const rows = sheetRows
-      .slice(2)
-      .filter(row => {
-        const itemNumber = String(row[0] ?? "").trim();
-        const skuUpc = String(row[1] ?? "").trim();
-        return itemNumber || skuUpc;
-      })
-      .map(row => ({
-        itemNumber: row[0] ?? "",
-        skuUpc: row[1] ?? "",
-        qtyOnHand: row[6] ?? 0
-      }));
+    const rows = buildMagstarBHRows(sheetRows);
 
     if (!rows.length) {
       showMessage(
@@ -8793,9 +8925,11 @@ async function uploadMagstarBHReport() {
     if (!result.success) {
       showMessage(
         "magstarBHMessage",
-        result.message || "Could not update Qty On PO from the B&H report.",
+        result.message ||
+          "Could not update Qty On PO from the B&H report.",
         "error"
       );
+
       uploadBtn.disabled = false;
       uploadBtn.textContent = "Upload B&H Report";
       return;
@@ -8807,7 +8941,8 @@ async function uploadMagstarBHReport() {
 
     showMessage(
       "magstarInventoryMessage",
-      result.message || "Magstar B&H report applied successfully.",
+      result.message ||
+        "Magstar B&H report applied successfully.",
       "success"
     );
 
@@ -8816,7 +8951,9 @@ async function uploadMagstarBHReport() {
 
     showMessage(
       "magstarBHMessage",
-      "There was an error processing the Magstar B&H report.",
+      error && error.message
+        ? error.message
+        : "There was an error processing the Magstar B&H report.",
       "error"
     );
 
