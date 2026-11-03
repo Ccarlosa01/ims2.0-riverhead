@@ -5,6 +5,10 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Warehouse Pallet Manager</title>
 
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Abril+Fatface&family=Alfa+Slab+One&family=Anton&family=Archivo+Narrow:ital,wght@0,400;0,700;1,400;1,700&family=Arimo:ital,wght@0,400;0,700;1,400;1,700&family=Barlow+Condensed:ital,wght@0,400;0,700;1,400;1,700&family=Bebas+Neue&family=Cormorant+Garamond:ital,wght@0,400;0,700;1,400;1,700&family=Crimson+Pro:ital,wght@0,400;0,700;1,400;1,700&family=DM+Sans:ital,wght@0,400;0,700;1,400;1,700&family=Fjalla+One&family=Inter:ital,wght@0,400;0,700;1,400;1,700&family=Lato:ital,wght@0,400;0,700;1,400;1,700&family=League+Spartan:wght@400;700&family=Libre+Baskerville:ital,wght@0,400;0,700;1,400&family=Lora:ital,wght@0,400;0,700;1,400;1,700&family=Merriweather:ital,wght@0,400;0,700;1,400;1,700&family=Montserrat:ital,wght@0,400;0,700;1,400;1,700&family=Nunito:ital,wght@0,400;0,700;1,400;1,700&family=Open+Sans:ital,wght@0,400;0,700;1,400;1,700&family=Oswald:wght@400;700&family=Playfair+Display:ital,wght@0,400;0,700;1,400;1,700&family=Poppins:ital,wght@0,400;0,700;1,400;1,700&family=Raleway:ital,wght@0,400;0,700;1,400;1,700&family=Roboto:ital,wght@0,400;0,700;1,400;1,700&family=Roboto+Condensed:ital,wght@0,400;0,700;1,400;1,700&family=Work+Sans:ital,wght@0,400;0,700;1,400;1,700&display=swap" rel="stylesheet">
+
   <style>
     body { font-family: Arial, sans-serif; background:#f4f6f8; margin:0; color:#222; }
     header { background:#1f5eff; color:white; padding:18px 24px; display:flex; justify-content:space-between; align-items:center; }
@@ -202,13 +206,18 @@
       font-family: Impact, Haettenschweiler, 'Arial Narrow Bold', sans-serif;
       margin-top: 18px;
       font-weight: bold;
-      
+    
       display: flex;
       align-items: center;
       justify-content: center;
       text-align: center;
     
-      min-height: 1.6in;
+      width: calc(100% - 0.55in);
+      height: 1.25in;
+      min-height: 1.25in;
+    
+      box-sizing: border-box;
+      overflow: hidden;
     }
     
     .price-preview-qr {
@@ -251,12 +260,15 @@
     .price-preview-preset-image {
       position: absolute;
       left: 14px;
-      bottom: 52px;
+    
+      /* Lift logo higher when slogan exists */
+      bottom: 72px;
+    
       width: 0.62in;
       height: 0.48in;
       object-fit: contain;
     }
-
+    
     .price-preview-preset-image.no-slogan {
       bottom: 16px;
       width: 1.15in;
@@ -470,11 +482,18 @@
       font-family: Impact, Haettenschweiler, 'Arial Narrow Bold', sans-serif;
       margin-top: 18px;
       font-weight: bold;
+    
       display: flex;
       align-items: center;
       justify-content: center;
       text-align: center;
-      min-height: 1.6in;
+    
+      width: calc(100% - 0.55in);
+      height: 1.25in;
+      min-height: 1.25in;
+    
+      box-sizing: border-box;
+      overflow: hidden;
     }
     
     .price-preview-qr {
@@ -532,6 +551,316 @@
     
     .floating-price-editor label {
       margin-top: 10px;
+    }
+
+
+    .price-font-row {
+      display: grid;
+      grid-template-columns: 1fr 46px;
+      gap: 8px;
+      align-items: end;
+    }
+
+    .price-font-picker {
+      position: relative;
+      width: 100%;
+      margin-top: 6px;
+    }
+
+    .price-font-picker-button {
+      width: 100%;
+      height: 42px;
+      margin: 0;
+      padding: 0 12px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      background: white;
+      color: #222;
+      border: 1px solid #ccc;
+      border-radius: 8px;
+      font-family: Arial, sans-serif;
+      font-size: 14px;
+      font-weight: 400;
+      text-align: left;
+    }
+
+    .price-font-picker-button:hover {
+      border-color: #999;
+    }
+
+    .price-font-picker-arrow {
+      font-size: 12px;
+      color: #666;
+      transition: transform 0.15s ease;
+    }
+
+    .price-font-picker.open .price-font-picker-arrow {
+      transform: rotate(180deg);
+    }
+
+    .price-font-menu {
+      display: none;
+      position: absolute;
+      top: calc(100% + 6px);
+      left: 0;
+      right: 0;
+      max-height: 300px;
+      overflow-y: auto;
+      background: white;
+      border: 1px solid #ccc;
+      border-radius: 10px;
+      box-shadow: 0 10px 28px rgba(0,0,0,0.18);
+      z-index: 100005;
+      padding: 6px;
+    }
+
+    .price-font-picker.open .price-font-menu {
+      display: block;
+    }
+
+    .price-font-menu-heading {
+      padding: 8px 9px 5px;
+      color: #666;
+      font-family: Arial, sans-serif;
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+    }
+
+    .price-font-option {
+      width: 100%;
+      min-height: 40px;
+      margin: 0;
+      padding: 8px 10px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      background: white;
+      color: #222;
+      border: 0;
+      border-radius: 7px;
+      font-size: 18px;
+      font-weight: 400;
+      text-align: left;
+    }
+
+    .price-font-option:hover {
+      background: #f0f4ff;
+    }
+
+    .price-font-option.selected {
+      background: #e9eefc;
+      outline: 1px solid #c8d5ff;
+    }
+
+    .price-font-option-check {
+      flex: 0 0 auto;
+      font-family: Arial, sans-serif;
+      font-size: 13px;
+      color: #1f5eff;
+    }
+
+    .price-font-favorite {
+      height: 42px;
+      margin-top: 6px;
+      padding: 0;
+      font-size: 22px;
+      background: #f4f6f8;
+      color: #444;
+      border: 1px solid #ccc;
+    }
+
+    .price-font-favorite.active {
+      background: #fff5cc;
+      color: #9a7200;
+      border-color: #e1bf44;
+    }
+
+    .price-format-toolbar {
+      display: flex;
+      gap: 8px;
+      margin-top: 10px;
+    }
+
+    .price-format-btn {
+      width: 42px;
+      height: 38px;
+      padding: 0;
+      margin: 0;
+      background: #f4f6f8;
+      color: #222;
+      border: 1px solid #ccc;
+      border-radius: 7px;
+      font-size: 16px;
+    }
+
+    .price-format-btn.active {
+      background: #1f5eff;
+      color: white;
+      border-color: #1f5eff;
+    }
+
+    .price-format-btn.italic-btn { font-style: italic; }
+    .price-format-btn.underline-btn { text-decoration: underline; }
+
+    .tasting-product-search-wrap {
+      position: relative;
+    }
+
+    .tasting-product-suggestions {
+      position: absolute;
+      top: calc(100% + 4px);
+      left: 0;
+      right: 0;
+      display: none;
+      max-height: 260px;
+      overflow-y: auto;
+      background: white;
+      border: 1px solid #ccc;
+      border-radius: 8px;
+      box-shadow: 0 8px 20px rgba(0,0,0,0.14);
+      z-index: 10000;
+    }
+
+    .tasting-product-suggestion {
+      display: block;
+      width: 100%;
+      margin: 0;
+      padding: 10px 12px;
+      border: 0;
+      border-bottom: 1px solid #eee;
+      border-radius: 0;
+      background: white;
+      color: #222;
+      text-align: left;
+      font-weight: 600;
+    }
+
+    .tasting-product-suggestion:hover {
+      background: #f0f4ff;
+    }
+
+    .tasting-selected-products {
+      margin-top: 10px;
+      display: flex;
+      flex-direction: column;
+      gap: 7px;
+    }
+
+    .tasting-selected-product {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      padding: 9px 11px;
+      background: #f4f6f8;
+      border: 1px solid #dde2ea;
+      border-radius: 8px;
+    }
+
+    .tasting-selected-product span {
+      font-size: 14px;
+      font-weight: 600;
+    }
+
+    .tasting-selected-product button {
+      flex: 0 0 auto;
+      width: 30px;
+      height: 30px;
+      margin: 0;
+      padding: 0;
+      border-radius: 50%;
+      background: #ffe5e5;
+      color: #b00020;
+      font-size: 18px;
+      line-height: 1;
+    }
+
+    .tasting-product-bullets {
+      margin: 0;
+      padding-left: 19px;
+    }
+
+    .tasting-product-bullets li {
+      margin: 0 0 4px;
+    }
+
+    .tasting-product-bullets.compact {
+      margin-top: 5px;
+      padding-left: 17px;
+      font-size: 11px;
+    }
+
+
+    .vendor-db-modal {
+      position: fixed;
+      inset: 0;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+      background: rgba(0,0,0,0.45);
+      z-index: 120000;
+    }
+
+    .vendor-db-modal.show {
+      display: flex;
+    }
+
+    .vendor-db-dialog {
+      width: min(560px, 100%);
+      max-height: calc(100vh - 40px);
+      overflow-y: auto;
+      background: white;
+      border-radius: 16px;
+      box-shadow: 0 18px 50px rgba(0,0,0,0.25);
+      padding: 24px;
+    }
+
+    .vendor-db-dialog h2 {
+      margin-bottom: 6px;
+    }
+
+    .vendor-db-progress {
+      margin-bottom: 18px;
+      color: #666;
+      font-size: 14px;
+      font-weight: 600;
+    }
+
+    .vendor-db-product {
+      padding: 14px;
+      margin-bottom: 16px;
+      background: #f4f6f8;
+      border: 1px solid #e0e4ea;
+      border-radius: 10px;
+    }
+
+    .vendor-db-product strong {
+      display: block;
+      margin-bottom: 4px;
+    }
+
+    .vendor-db-new-input {
+      display: none;
+      margin-top: 8px;
+    }
+
+    .vendor-db-actions {
+      display: flex;
+      justify-content: flex-end;
+      gap: 10px;
+      margin-top: 18px;
+    }
+
+    .vendor-db-error {
+      min-height: 20px;
+      margin-top: 12px;
+      color: #b00020;
+      font-weight: 600;
     }
 
     .tasting-calendar {
@@ -634,6 +963,63 @@
       border-bottom: none;
       font-size: 20px;
       font-weight: bold;
+    }
+
+
+    .inventory-report-actions {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 16px;
+      flex-wrap: wrap;
+      margin-top: 14px;
+    }
+
+    .inventory-report-actions-left {
+      display: flex;
+      gap: 6px;
+      flex-wrap: wrap;
+      align-items: center;
+    }
+
+    .inventory-report-actions .inventory-only-download {
+      margin-left: auto;
+    }
+
+    .magstar-bh-modal {
+      position: fixed;
+      inset: 0;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+      background: rgba(0,0,0,0.45);
+      z-index: 120000;
+    }
+
+    .magstar-bh-modal.show { display: flex; }
+
+    .magstar-bh-dialog {
+      width: min(560px, 100%);
+      max-height: calc(100vh - 40px);
+      overflow-y: auto;
+      background: white;
+      border-radius: 16px;
+      box-shadow: 0 18px 50px rgba(0,0,0,0.25);
+      padding: 24px;
+    }
+
+    .magstar-bh-actions {
+      display: flex;
+      justify-content: flex-end;
+      gap: 10px;
+      margin-top: 18px;
+    }
+
+    @media (max-width: 800px) {
+      .inventory-report-actions { align-items: stretch; }
+      .inventory-report-actions-left { width: 100%; }
+      .inventory-report-actions .inventory-only-download { margin-left: 0; }
     }
 
     .loading-bar-wrap {
@@ -1025,7 +1411,7 @@
   <div class="tabs">
     <button class="tab-btn active" onclick="showTab('workbench', this)">Update Pallet</button>
     <button class="tab-btn" onclick="showTab('catalog', this)">Catalog View</button>
-    <button class="tab-btn" onclick="showTab('clear', this)">Clear Pallets</button>
+    <button class="tab-btn" onclick="showTab('clear', this)">Manipulate Pallets</button>
     <button class="tab-btn" onclick="showTab('wineBoatStorage', this)">Wine Boat Storage</button>
     <button class="tab-btn" onclick="showTab('breakers', this)">Breakers</button>
     <!-- COMMENTED OUT: <button class="tab-btn" onclick="showTab('customerOrder', this)">Customer Order</button> -->
@@ -1173,6 +1559,45 @@
       <button class="danger" onclick="clearMultiplePallets()">Clear Selected Pallets</button>
 
       <div id="clearMessage" class="message"></div>
+    </div>
+
+    <div class="card">
+      <h2>Swap Pallet Information</h2>
+      <p class="muted">
+        Swap all existing pallet information between two pallet numbers.
+      </p>
+
+      <div class="row">
+        <div>
+          <label for="swapPalletOne">Target Pallet #:</label>
+          <input
+            type="number"
+            id="swapPalletOne"
+            min="1"
+            step="1"
+            inputmode="numeric"
+            placeholder="Example: 5"
+          />
+        </div>
+
+        <div>
+          <label for="swapPalletTwo">Target Pallet #:</label>
+          <input
+            type="number"
+            id="swapPalletTwo"
+            min="1"
+            step="1"
+            inputmode="numeric"
+            placeholder="Example: 10"
+          />
+        </div>
+      </div>
+
+      <button class="primary" onclick="swapPalletInformation()">
+        Swap Pallet Information
+      </button>
+
+      <div id="swapPalletMessage" class="message"></div>
     </div>
 
   </div>
@@ -1692,32 +2117,19 @@
 
     <div class="card">
       <h2>Inventory Upload - Magstar</h2>
-    
-      <p>
-        Upload a Magstar inventory XML file.
+      <p class="muted">
+        Manager-only tool. Upload a Magstar .xlsx file.
       </p>
     
-      <input
-        type="file"
-        id="magstarInventoryFile"
-        accept=".xml"
-      >
+      <input type="file" id="magstarInventoryFile" accept=".xlsx,.xls" />
     
-      <button
-        type="button"
-        class="primary"
-        onclick="uploadMagstarInventory()"
-        style="margin-top: 10px;"
-      >
+      <button type="button" class="primary" onclick="uploadMagstarInventory()">
         Upload Magstar Inventory
       </button>
     
-      <div
-        id="magstarInventoryMessage"
-        style="margin-top: 10px;"
-      ></div>
+      <div id="magstarInventoryMessage" class="message"></div>
     </div>
-    
+
     <div class="card">
       <h2>Barcode Upload</h2>
       <p class="muted">
@@ -1754,9 +2166,20 @@
         Manager-only report. This generates totals from Inventory, Pallets, Breakers, and Inventory Entry.
       </p>
   
-      <button class="primary" onclick="generateInventoryReport()">Generate Inventory Report</button>
-      <button class="secondary" onclick="downloadInventoryReportExcel()">Download Inventory Report Excel</button>
-      <button class="secondary" onclick="sortByCountVariance()">Sort by Count Variance</button>
+      <div class="inventory-report-actions">
+        <div class="inventory-report-actions-left">
+          <button class="primary" onclick="generateInventoryReport()">Generate Inventory Report</button>
+          <button class="secondary" onclick="downloadInventoryReportExcel()">Download Inventory Report Excel</button>
+          <button class="secondary" onclick="sortByCountVariance()">Sort by Count Variance</button>
+        </div>
+
+        <button
+          class="secondary inventory-only-download"
+          onclick="downloadExistingInventoryOnly()"
+        >
+          Download Existing Inventory Only
+        </button>
+      </div>
   
       <div id="inventoryReportMessage" class="message"></div>
   
@@ -1949,6 +2372,28 @@
   
   </div>
 
+
+  <div id="magstarBHModal" class="magstar-bh-modal" aria-hidden="true">
+    <div class="magstar-bh-dialog" role="dialog" aria-modal="true" aria-labelledby="magstarBHModalTitle">
+      <h2 id="magstarBHModalTitle">Upload Magstar B&amp;H Report</h2>
+      <p class="muted">
+        Final Magstar step: upload the B&amp;H report. Its Qty On Hand will update Inventory Qty On PO.
+        Inventory items not found in this report will be set to 0 Qty On PO.
+      </p>
+
+      <input type="file" id="magstarBHFile" accept=".xlsx,.xls" />
+
+      <div class="magstar-bh-actions">
+        <button type="button" class="secondary" onclick="closeMagstarBHModal()">Cancel</button>
+        <button type="button" class="primary" id="uploadMagstarBHBtn" onclick="uploadMagstarBHReport()">
+          Upload B&amp;H Report
+        </button>
+      </div>
+
+      <div id="magstarBHMessage" class="message"></div>
+    </div>
+  </div>
+
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 <script src="https://unpkg.com/@zxing/library@latest"></script>
 <script src="https://cdn.jsdelivr.net/npm/exceljs/dist/exceljs.min.js"></script>
@@ -1956,7 +2401,7 @@
 <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
 
 <script>
-const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbynVgnlIlHYA4Q8PNrspwRT-_SuKuqrehHQaHN3DVeu1XgQd_6IO0Q-6ljMyoox6Q6g/exec";
+const SCRIPT_URL = "https://script.google.com/macros/s/AKfycby-zhJyJZkfZ3bgteLZFJTNxV50qwoF_FiPjFF1gf4eduXq0vJN7RCT25MDKLT8H1W1/exec";
 
 let currentUser = null;
 let inventory = [];
@@ -1973,6 +2418,75 @@ let priceTags = [];
 let selectedPriceTagIndex = 0;
 let selectedPriceElement = "";
 let priceTagSettings = {};
+let favoritePriceTagFonts = [];
+
+const PRICE_TAG_FONT_GROUPS = {
+  "Sans Serif": [
+    "Arimo",
+    "Roboto",
+    "Open Sans",
+    "Montserrat",
+    "Poppins",
+    "Lato",
+    "Raleway",
+    "Nunito",
+    "Work Sans",
+    "Inter",
+    "DM Sans"
+  ],
+  "Display / Condensed": [
+    "Anton",
+    "Oswald",
+    "Bebas Neue",
+    "Roboto Condensed",
+    "Archivo Narrow",
+    "Barlow Condensed",
+    "Fjalla One",
+    "League Spartan",
+    "Abril Fatface",
+    "Alfa Slab One"
+  ],
+  "Serif / Premium": [
+    "Playfair Display",
+    "Merriweather",
+    "Lora",
+    "Libre Baskerville",
+    "Cormorant Garamond",
+    "Crimson Pro"
+  ],
+  "System Fonts": [
+    "Arial",
+    "Impact"
+  ]
+};
+
+const PRICE_TAG_FONTS = Object.values(PRICE_TAG_FONT_GROUPS).flat();
+
+const PRICE_TAG_SERIF_FONTS = new Set([
+  "Playfair Display",
+  "Merriweather",
+  "Lora",
+  "Libre Baskerville",
+  "Cormorant Garamond",
+  "Crimson Pro"
+]);
+
+function getPriceTagFontStack(fontName) {
+  const font = fontName || "Montserrat";
+
+  if (font === "Arial") {
+    return "Arial, Helvetica, sans-serif";
+  }
+
+  if (font === "Impact") {
+    return "Impact, Haettenschweiler, 'Arial Narrow Bold', sans-serif";
+  }
+
+  const fallback = PRICE_TAG_SERIF_FONTS.has(font) ? "serif" : "sans-serif";
+
+  // Use single quotes inside inline style attributes.
+  return `'${font}', ${fallback}`;
+}
 let tastingsData = [];
 let tastingViewMode = "list";
 let recountItems = [];
@@ -2030,6 +2544,7 @@ window.onload = async function () {
   await loadCustomers();
   await loadBarcodes();
   await loadPriceTagSettings();
+  await loadFavoritePriceTagFonts();
   await loadRecountItems();
 };
 
@@ -2491,6 +3006,119 @@ async function clearMultiplePallets() {
     }
   } catch {
     showMessage("clearMessage", "Could not clear selected pallets.", "error");
+  }
+}
+
+async function swapPalletInformation() {
+  const palletOneInput = document.getElementById("swapPalletOne");
+  const palletTwoInput = document.getElementById("swapPalletTwo");
+
+  const palletOne = String(palletOneInput.value || "").trim();
+  const palletTwo = String(palletTwoInput.value || "").trim();
+
+  if (!palletOne || !palletTwo) {
+    showMessage(
+      "swapPalletMessage",
+      "Enter both target pallet numbers.",
+      "error"
+    );
+    return;
+  }
+
+  if (!/^\d+$/.test(palletOne) || !/^\d+$/.test(palletTwo)) {
+    showMessage(
+      "swapPalletMessage",
+      "Target pallet numbers must contain numbers only.",
+      "error"
+    );
+    return;
+  }
+
+  if (!isValidPalletNumber(palletOne) || !isValidPalletNumber(palletTwo)) {
+    showMessage(
+      "swapPalletMessage",
+      `Both pallet numbers must be between 1 and ${maxPallets}.`,
+      "error"
+    );
+    return;
+  }
+
+  if (palletOne === palletTwo) {
+    showMessage(
+      "swapPalletMessage",
+      "Choose two different pallet numbers.",
+      "error"
+    );
+    return;
+  }
+
+  const confirmed = confirm(
+    `Swap all pallet information between Pallet ${palletOne} and Pallet ${palletTwo}?`
+  );
+
+  if (!confirmed) return;
+
+  try {
+    showMessage(
+      "swapPalletMessage",
+      `Swapping Pallet ${palletOne} and Pallet ${palletTwo}...`,
+      ""
+    );
+
+    const response = await fetch(SCRIPT_URL, {
+      method: "POST",
+      body: JSON.stringify({
+        action: "swapPalletInformation",
+        palletOne,
+        palletTwo
+      })
+    });
+
+    const result = await response.json();
+
+    if (!result.success) {
+      showMessage(
+        "swapPalletMessage",
+        result.message || "Could not swap pallet information.",
+        "error"
+      );
+      return;
+    }
+
+    palletOneInput.value = "";
+    palletTwoInput.value = "";
+
+    showMessage(
+      "swapPalletMessage",
+      result.message,
+      "success"
+    );
+
+    if (typeof loadAllPallets === "function") {
+      await loadAllPallets();
+    }
+
+    const selectedPallet = String(
+      document.getElementById("palletNumber")?.value || ""
+    ).trim();
+
+    if (
+      selectedPallet === palletOne ||
+      selectedPallet === palletTwo
+    ) {
+      if (typeof loadPallet === "function") {
+        await loadPallet();
+      }
+    }
+
+  } catch (error) {
+    console.error(error);
+
+    showMessage(
+      "swapPalletMessage",
+      "Could not swap pallet information.",
+      "error"
+    );
   }
 }
 
@@ -4061,7 +4689,32 @@ function createBlankPriceTag() {
     sizeFont: 26,
     priceFont: 125,
     itemNoFont: 16,
-    sloganFont: 24
+    sloganFont: 24,
+
+    nameFontFamily: "Montserrat",
+    nameBold: true,
+    nameItalic: false,
+    nameUnderline: false,
+
+    typeFontFamily: "Montserrat",
+    typeBold: true,
+    typeItalic: false,
+    typeUnderline: false,
+
+    sizeFontFamily: "Montserrat",
+    sizeBold: true,
+    sizeItalic: false,
+    sizeUnderline: false,
+
+    priceFontFamily: "Anton",
+    priceBold: false,
+    priceItalic: false,
+    priceUnderline: false,
+
+    sloganFontFamily: "Montserrat",
+    sloganBold: true,
+    sloganItalic: false,
+    sloganUnderline: false
   };
 }
 
@@ -4547,6 +5200,221 @@ async function loadPriceTagSettings() {
   }
 }
 
+function buildPriceTagFontMenu(selectedFont, familyField) {
+  const selected = selectedFont || "Montserrat";
+  const favorites = favoritePriceTagFonts.filter(font => PRICE_TAG_FONTS.includes(font));
+
+  const buildOption = font => `
+    <button
+      type="button"
+      class="price-font-option ${font === selected ? "selected" : ""}"
+      style="font-family:${getPriceTagFontStack(font)};"
+      onclick="selectPriceTagFont(event, '${familyField}', '${font}')"
+    >
+      <span>${font}</span>
+      ${font === selected ? '<span class="price-font-option-check">✓</span>' : ''}
+    </button>
+  `;
+
+  let html = "";
+
+  if (favorites.length) {
+    html += `<div class="price-font-menu-heading">★ Favorites</div>`;
+    html += favorites.map(buildOption).join("");
+  }
+
+  Object.entries(PRICE_TAG_FONT_GROUPS).forEach(([groupName, fonts]) => {
+    const visibleFonts = fonts.filter(font => !favorites.includes(font));
+    if (!visibleFonts.length) return;
+
+    html += `<div class="price-font-menu-heading">${groupName}</div>`;
+    html += visibleFonts.map(buildOption).join("");
+  });
+
+  return html;
+}
+
+function togglePriceTagFontMenu(event, button) {
+  event.preventDefault();
+  event.stopPropagation();
+
+  const picker = button.closest(".price-font-picker");
+  if (!picker) return;
+
+  const shouldOpen = !picker.classList.contains("open");
+
+  document.querySelectorAll(".price-font-picker.open").forEach(otherPicker => {
+    otherPicker.classList.remove("open");
+  });
+
+  if (shouldOpen) {
+    picker.classList.add("open");
+  }
+}
+
+function selectPriceTagFont(event, familyField, fontName) {
+  event.preventDefault();
+  event.stopPropagation();
+
+  updateVisualTag(familyField, fontName);
+  renderFloatingPriceEditorContent(selectedPriceTagIndex, selectedPriceElement);
+}
+
+function closeAllPriceTagFontMenus() {
+  document.querySelectorAll(".price-font-picker.open").forEach(picker => {
+    picker.classList.remove("open");
+  });
+}
+
+document.addEventListener("click", closeAllPriceTagFontMenus);
+
+function isFavoritePriceTagFont(fontName) {
+  return favoritePriceTagFonts.includes(fontName);
+}
+
+async function loadFavoritePriceTagFonts() {
+  if (!currentUser || !currentUser.username) {
+    favoritePriceTagFonts = [];
+    return;
+  }
+
+  try {
+    const response = await fetch(
+      `${SCRIPT_URL}?action=getFavoriteFonts&username=${encodeURIComponent(currentUser.username)}`
+    );
+    const result = await response.json();
+    favoritePriceTagFonts = result.success && Array.isArray(result.favoriteFonts)
+      ? result.favoriteFonts
+      : [];
+  } catch (error) {
+    console.warn("Could not load favorite price tag fonts.", error);
+    favoritePriceTagFonts = [];
+  }
+}
+
+async function toggleFavoritePriceTagFont(fontName) {
+  if (!fontName || !currentUser || !currentUser.username) return;
+
+  if (favoritePriceTagFonts.includes(fontName)) {
+    favoritePriceTagFonts = favoritePriceTagFonts.filter(font => font !== fontName);
+  } else {
+    favoritePriceTagFonts.push(fontName);
+  }
+
+  try {
+    const response = await fetch(SCRIPT_URL, {
+      method: "POST",
+      body: JSON.stringify({
+        action: "saveFavoriteFonts",
+        username: currentUser.username,
+        favoriteFonts: favoritePriceTagFonts
+      })
+    });
+    const result = await response.json();
+    if (!result.success) console.warn(result.message);
+  } catch (error) {
+    console.warn("Could not save favorite fonts.", error);
+  }
+
+  renderFloatingPriceEditorContent(selectedPriceTagIndex, selectedPriceElement);
+}
+
+function toggleVisualTagBoolean(field) {
+  const tag = priceTags[selectedPriceTagIndex];
+  if (!tag) return;
+  tag[field] = !Boolean(tag[field]);
+  renderPriceTagPreview();
+  renderFloatingPriceEditorContent(selectedPriceTagIndex, selectedPriceElement);
+}
+
+function getTypographyConfig(element) {
+  const configs = {
+    name: {
+      label: "Product Name", textField: "productName", sizeField: "nameFont",
+      familyField: "nameFontFamily", boldField: "nameBold",
+      italicField: "nameItalic", underlineField: "nameUnderline"
+    },
+    type: {
+      label: "Product Type", textField: "productType", sizeField: "typeFont",
+      familyField: "typeFontFamily", boldField: "typeBold",
+      italicField: "typeItalic", underlineField: "typeUnderline"
+    },
+    size: {
+      label: "Product Size", textField: "productSize", sizeField: "sizeFont",
+      familyField: "sizeFontFamily", boldField: "sizeBold",
+      italicField: "sizeItalic", underlineField: "sizeUnderline"
+    },
+    price: {
+      label: "Price", textField: "price", sizeField: "priceFont",
+      familyField: "priceFontFamily", boldField: "priceBold",
+      italicField: "priceItalic", underlineField: "priceUnderline", inputType: "number"
+    },
+    slogan: {
+      label: "Slogan", textField: "slogan", sizeField: "sloganFont",
+      familyField: "sloganFontFamily", boldField: "sloganBold",
+      italicField: "sloganItalic", underlineField: "sloganUnderline"
+    }
+  };
+  return configs[element] || null;
+}
+
+function buildTypographyEditor(element, tag) {
+  const config = getTypographyConfig(element);
+  if (!config) return "";
+
+  const defaultFont = element === "price" ? "Anton" : "Montserrat";
+  const font = tag[config.familyField] || defaultFont;
+  const isFavorite = isFavoritePriceTagFont(font);
+  const value = tag[config.textField] ?? "";
+  const inputType = config.inputType || "text";
+  const step = element === "price" ? `step="0.01"` : "";
+
+  return `
+    <label>${config.label}</label>
+    <input type="${inputType}" ${step} value="${value}"
+           oninput="updateVisualTag('${config.textField}', this.value)">
+
+    <label>Font</label>
+    <div class="price-font-row">
+      <div class="price-font-picker">
+        <button
+          type="button"
+          class="price-font-picker-button"
+          onclick="togglePriceTagFontMenu(event, this)"
+        >
+          <span>${font}</span>
+          <span class="price-font-picker-arrow">▼</span>
+        </button>
+
+        <div class="price-font-menu" onclick="event.stopPropagation()">
+          ${buildPriceTagFontMenu(font, config.familyField)}
+        </div>
+      </div>
+
+      <button type="button"
+              class="price-font-favorite ${isFavorite ? "active" : ""}"
+              title="${isFavorite ? "Remove from favorites" : "Add to favorites"}"
+              onclick="toggleFavoritePriceTagFont('${font}')">
+        ${isFavorite ? "★" : "☆"}
+      </button>
+    </div>
+
+    <label>Formatting</label>
+    <div class="price-format-toolbar">
+      <button type="button" class="price-format-btn ${tag[config.boldField] ? "active" : ""}"
+              onclick="toggleVisualTagBoolean('${config.boldField}')" title="Bold"><strong>B</strong></button>
+      <button type="button" class="price-format-btn italic-btn ${tag[config.italicField] ? "active" : ""}"
+              onclick="toggleVisualTagBoolean('${config.italicField}')" title="Italic">I</button>
+      <button type="button" class="price-format-btn underline-btn ${tag[config.underlineField] ? "active" : ""}"
+              onclick="toggleVisualTagBoolean('${config.underlineField}')" title="Underline">U</button>
+    </div>
+
+    <label>Font Size</label>
+    <input type="number" min="1" value="${tag[config.sizeField]}"
+           oninput="updateVisualTag('${config.sizeField}', this.value)">
+  `;
+}
+
 async function saveSelectedPriceTagSettings() {
   const btn = document.getElementById("saveTagSettingsBtn");
   const spinner = document.getElementById("saveTagSettingsSpinner");
@@ -4583,7 +5451,32 @@ async function saveSelectedPriceTagSettings() {
           sizeFont: tag.sizeFont,
           priceFont: tag.priceFont,
           itemNoFont: tag.itemNoFont,
-          sloganFont: tag.sloganFont
+          sloganFont: tag.sloganFont,
+
+          nameFontFamily: tag.nameFontFamily,
+          nameBold: tag.nameBold,
+          nameItalic: tag.nameItalic,
+          nameUnderline: tag.nameUnderline,
+
+          typeFontFamily: tag.typeFontFamily,
+          typeBold: tag.typeBold,
+          typeItalic: tag.typeItalic,
+          typeUnderline: tag.typeUnderline,
+
+          sizeFontFamily: tag.sizeFontFamily,
+          sizeBold: tag.sizeBold,
+          sizeItalic: tag.sizeItalic,
+          sizeUnderline: tag.sizeUnderline,
+
+          priceFontFamily: tag.priceFontFamily,
+          priceBold: tag.priceBold,
+          priceItalic: tag.priceItalic,
+          priceUnderline: tag.priceUnderline,
+
+          sloganFontFamily: tag.sloganFontFamily,
+          sloganBold: tag.sloganBold,
+          sloganItalic: tag.sloganItalic,
+          sloganUnderline: tag.sloganUnderline
         }
       })
     });
@@ -4639,6 +5532,31 @@ function loadSavedPriceTagSettings() {
   tag.itemNoFont = saved.itemNoFont || 14;
   tag.sloganFont = saved.sloganFont || 18;
 
+  tag.nameFontFamily = saved.nameFontFamily || "Montserrat";
+  tag.nameBold = saved.nameBold !== undefined ? saved.nameBold : true;
+  tag.nameItalic = saved.nameItalic !== undefined ? saved.nameItalic : false;
+  tag.nameUnderline = saved.nameUnderline !== undefined ? saved.nameUnderline : false;
+
+  tag.typeFontFamily = saved.typeFontFamily || "Montserrat";
+  tag.typeBold = saved.typeBold !== undefined ? saved.typeBold : true;
+  tag.typeItalic = saved.typeItalic !== undefined ? saved.typeItalic : false;
+  tag.typeUnderline = saved.typeUnderline !== undefined ? saved.typeUnderline : false;
+
+  tag.sizeFontFamily = saved.sizeFontFamily || "Montserrat";
+  tag.sizeBold = saved.sizeBold !== undefined ? saved.sizeBold : true;
+  tag.sizeItalic = saved.sizeItalic !== undefined ? saved.sizeItalic : false;
+  tag.sizeUnderline = saved.sizeUnderline !== undefined ? saved.sizeUnderline : false;
+
+  tag.priceFontFamily = saved.priceFontFamily || "Anton";
+  tag.priceBold = saved.priceBold !== undefined ? saved.priceBold : false;
+  tag.priceItalic = saved.priceItalic !== undefined ? saved.priceItalic : false;
+  tag.priceUnderline = saved.priceUnderline !== undefined ? saved.priceUnderline : false;
+
+  tag.sloganFontFamily = saved.sloganFontFamily || "Montserrat";
+  tag.sloganBold = saved.sloganBold !== undefined ? saved.sloganBold : true;
+  tag.sloganItalic = saved.sloganItalic !== undefined ? saved.sloganItalic : false;
+  tag.sloganUnderline = saved.sloganUnderline !== undefined ? saved.sloganUnderline : false;
+
   generatePriceTagQR(selectedPriceTagIndex);
 
   loadSelectedPriceTagEditor();
@@ -4647,6 +5565,22 @@ function loadSavedPriceTagSettings() {
   alert("Saved settings loaded successfully.");
 }
   
+function getPriceTagTypographyStyle(tag, element) {
+  const config = getTypographyConfig(element);
+  if (!config) return "";
+
+  const defaultFont = element === "price" ? "Anton" : "Montserrat";
+  const font = tag[config.familyField] || defaultFont;
+
+  return `
+    font-size:${Number(tag[config.sizeField] || 0)}px;
+    font-family:${getPriceTagFontStack(font)};
+    font-weight:${tag[config.boldField] ? "700" : "400"};
+    font-style:${tag[config.italicField] ? "italic" : "normal"};
+    text-decoration:${tag[config.underlineField] ? "underline" : "none"};
+  `;
+}
+
 function renderPriceTagPreview() {
   const preview = document.getElementById("priceTagPreview");
   preview.innerHTML = "";
@@ -4683,19 +5617,19 @@ function renderPriceTagPreview() {
       </div>
 
       <div class="price-preview-info">
-        <div class="price-preview-name price-clickable" onclick="openFloatingEditor(${index}, 'name', event)" style="font-size:${tag.nameFont}px;">
+        <div class="price-preview-name price-clickable" onclick="openFloatingEditor(${index}, 'name', event)" style="${getPriceTagTypographyStyle(tag, "name")}">
           ${tag.productName || "Product Name"}
         </div>
 
-        <div class="price-preview-type price-clickable" onclick="openFloatingEditor(${index}, 'type', event)" style="font-size:${tag.typeFont}px;">
+        <div class="price-preview-type price-clickable" onclick="openFloatingEditor(${index}, 'type', event)" style="${getPriceTagTypographyStyle(tag, "type")}">
           ${tag.productType || "Product Type"}
         </div>
 
-        <div class="price-preview-size price-clickable" onclick="openFloatingEditor(${index}, 'size', event)" style="font-size:${tag.sizeFont}px;">
+        <div class="price-preview-size price-clickable" onclick="openFloatingEditor(${index}, 'size', event)" style="${getPriceTagTypographyStyle(tag, "size")}">
           ${tag.productSize || "Product Size"}
         </div>
 
-        <div class="price-preview-price price-clickable" onclick="openFloatingEditor(${index}, 'price', event)" style="font-size:${tag.priceFont}px;">
+        <div class="price-preview-price price-clickable" onclick="openFloatingEditor(${index}, 'price', event)" style="${getPriceTagTypographyStyle(tag, "price")}">
           $${Number(tag.price || 0).toFixed(2)}
         </div>
 
@@ -4723,11 +5657,11 @@ function renderPriceTagPreview() {
                   style="
                     background:${tag.sloganBg};
                     color:${tag.sloganColor};
-                    font-size:${tag.sloganFont}px;
+                    ${getPriceTagTypographyStyle(tag, "slogan")}
                   ">
                   ${tag.slogan}
                </div>`
-            : `<div class="price-preview-slogan price-clickable" onclick="openFloatingEditor(${index}, 'slogan', event)">
+            : `<div class="price-preview-slogan price-clickable" onclick="openFloatingEditor(${index}, 'slogan', event)" style="${getPriceTagTypographyStyle(tag, "slogan")}">
                 Slogan
                </div>`
         }
@@ -4899,110 +5833,92 @@ function openFloatingEditor(index, element, event) {
   selectedPriceElement = element;
 
   const panel = document.getElementById("floatingPriceEditor");
-  const title = document.getElementById("floatingEditorTitle");
-  const body = document.getElementById("floatingPriceEditorBody");
-
   panel.style.display = "block";
 
-  panel.style.left = Math.min(window.innerWidth - 340, event.clientX + 16) + "px";
-  panel.style.top = Math.min(window.innerHeight - 420, event.clientY + 16) + "px";
+  if (event) {
+    const clickedElement = event.currentTarget;
+    const rect = clickedElement.getBoundingClientRect();
 
+    const panelWidth = 320;
+    const gap = 14;
+
+    // Default:
+    // place the top-left of the editor
+    // just to the right of the field's top-right corner
+    let left = rect.right + gap;
+    let top = rect.top;
+
+    // If there is not enough space on the right,
+    // move the editor to the left side of the field
+    if (left + panelWidth > window.innerWidth - 10) {
+      left = rect.left - panelWidth - gap;
+    }
+
+    // Keep editor inside the left edge of the screen
+    if (left < 10) {
+      left = 10;
+    }
+
+    // Keep editor inside the top edge of the screen
+    if (top < 10) {
+      top = 10;
+    }
+
+    panel.style.left = left + "px";
+    panel.style.top = top + "px";
+  }
+
+  renderFloatingPriceEditorContent(index, element);
+
+  // After the editor content is rendered,
+  // make sure the bottom of the panel is not cut off
+  requestAnimationFrame(() => {
+    const panelRect = panel.getBoundingClientRect();
+
+    if (panelRect.bottom > window.innerHeight - 10) {
+      const adjustedTop = Math.max(
+        10,
+        window.innerHeight - panelRect.height - 10
+      );
+
+      panel.style.top = adjustedTop + "px";
+    }
+  });
+}
+
+function renderFloatingPriceEditorContent(index, element) {
+  const title = document.getElementById("floatingEditorTitle");
+  const body = document.getElementById("floatingPriceEditorBody");
   const tag = priceTags[index];
+  if (!tag) return;
 
   title.textContent = `Edit ${element}`;
 
-  if (element === "name") {
-    body.innerHTML = `
-      <label>Product Name</label>
-      <input value="${tag.productName || ""}" 
-             oninput="updateVisualTag('productName', this.value)">
-
-      <label>Font Size</label>
-      <input type="number"
-             value="${tag.nameFont}"
-             oninput="updateVisualTag('nameFont', this.value)">
-    `;
-    return;
-  }
-
-  if (element === "type") {
-    body.innerHTML = `
-      <label>Product Type</label>
-      <input value="${tag.productType || ""}" 
-             oninput="updateVisualTag('productType', this.value)">
-
-      <label>Font Size</label>
-      <input type="number"
-             value="${tag.typeFont}"
-             oninput="updateVisualTag('typeFont', this.value)">
-    `;
-    return;
-  }
-
-  if (element === "size") {
-    body.innerHTML = `
-      <label>Product Size</label>
-      <input value="${tag.productSize || ""}" 
-             oninput="updateVisualTag('productSize', this.value)">
-
-      <label>Font Size</label>
-      <input type="number"
-             value="${tag.sizeFont}"
-             oninput="updateVisualTag('sizeFont', this.value)">
-    `;
-    return;
-  }
-
-  if (element === "price") {
-    body.innerHTML = `
-      <label>Price</label>
-      <input type="number"
-             step="0.01"
-             value="${tag.price}"
-             oninput="updateVisualTag('price', this.value)">
-
-      <label>Font Size</label>
-      <input type="number"
-             value="${tag.priceFont}"
-             oninput="updateVisualTag('priceFont', this.value)">
-    `;
+  if (["name", "type", "size", "price"].includes(element)) {
+    body.innerHTML = buildTypographyEditor(element, tag);
     return;
   }
 
   if (element === "itemNo") {
     body.innerHTML = `
       <label>Item No.</label>
-      <input value="${tag.itemNo || ""}" 
-             oninput="updateVisualTag('itemNo', this.value)">
+      <input value="${tag.itemNo || ""}" oninput="updateVisualTag('itemNo', this.value)">
 
       <label>Font Size</label>
-      <input type="number"
-             value="${tag.itemNoFont}"
-             oninput="updateVisualTag('itemNoFont', this.value)">
+      <input type="number" value="${tag.itemNoFont}" oninput="updateVisualTag('itemNoFont', this.value)">
     `;
     return;
   }
 
   if (element === "slogan") {
     body.innerHTML = `
-      <label>Slogan</label>
-      <input value="${tag.slogan || ""}" 
-             oninput="updateVisualTag('slogan', this.value)">
-
-      <label>Slogan Font</label>
-      <input type="number"
-             value="${tag.sloganFont}"
-             oninput="updateVisualTag('sloganFont', this.value)">
+      ${buildTypographyEditor("slogan", tag)}
 
       <label>Background Color</label>
-      <input type="color"
-             value="${tag.sloganBg}"
-             oninput="updateVisualTag('sloganBg', this.value)">
+      <input type="color" value="${tag.sloganBg}" oninput="updateVisualTag('sloganBg', this.value)">
 
       <label>Text Color</label>
-      <input type="color"
-             value="${tag.sloganColor}"
-             oninput="updateVisualTag('sloganColor', this.value)">
+      <input type="color" value="${tag.sloganColor}" oninput="updateVisualTag('sloganColor', this.value)">
     `;
     return;
   }
@@ -5010,8 +5926,7 @@ function openFloatingEditor(index, element, event) {
   if (element === "qr") {
     body.innerHTML = `
       <label>Product Website URL</label>
-      <input value="${tag.productUrl || ""}" 
-             oninput="updateVisualProductUrl(this.value)">
+      <input value="${tag.productUrl || ""}" oninput="updateVisualProductUrl(this.value)">
     `;
     return;
   }
@@ -5019,34 +5934,19 @@ function openFloatingEditor(index, element, event) {
   if (element === "image") {
     body.innerHTML = `
       <label>Image URL</label>
-      <input value="${tag.imageUrl || ""}" 
-             oninput="updateVisualTag('imageUrl', this.value)">
+      <input value="${tag.imageUrl || ""}" oninput="updateVisualTag('imageUrl', this.value)">
 
       <label>Upload Image</label>
-      <input type="file"
-             accept="image/*"
-             onchange="uploadVisualPriceTagImage(this.files[0])">
+      <input type="file" accept="image/*" onchange="uploadVisualPriceTagImage(this.files[0])">
 
       <label>Zoom</label>
-      <input type="range"
-             min="50"
-             max="200"
-             value="${tag.objectZoom}"
-             oninput="updateVisualTag('objectZoom', this.value)">
+      <input type="range" min="50" max="200" value="${tag.objectZoom}" oninput="updateVisualTag('objectZoom', this.value)">
 
       <label>Horizontal Position</label>
-      <input type="range"
-             min="0"
-             max="100"
-             value="${tag.objectPositionX}"
-             oninput="updateVisualTag('objectPositionX', this.value)">
+      <input type="range" min="0" max="100" value="${tag.objectPositionX}" oninput="updateVisualTag('objectPositionX', this.value)">
 
       <label>Vertical Position</label>
-      <input type="range"
-             min="0"
-             max="100"
-             value="${tag.objectPositionY}"
-             oninput="updateVisualTag('objectPositionY', this.value)">
+      <input type="range" min="0" max="100" value="${tag.objectPositionY}" oninput="updateVisualTag('objectPositionY', this.value)">
     `;
   }
 }
@@ -5067,6 +5967,10 @@ function printPriceTags() {
     <html>
     <head>
       <title>Print Price Tags</title>
+
+      <link rel="preconnect" href="https://fonts.googleapis.com">
+      <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+      <link href="https://fonts.googleapis.com/css2?family=Abril+Fatface&family=Alfa+Slab+One&family=Anton&family=Archivo+Narrow:ital,wght@0,400;0,700;1,400;1,700&family=Arimo:ital,wght@0,400;0,700;1,400;1,700&family=Barlow+Condensed:ital,wght@0,400;0,700;1,400;1,700&family=Bebas+Neue&family=Cormorant+Garamond:ital,wght@0,400;0,700;1,400;1,700&family=Crimson+Pro:ital,wght@0,400;0,700;1,400;1,700&family=DM+Sans:ital,wght@0,400;0,700;1,400;1,700&family=Fjalla+One&family=Inter:ital,wght@0,400;0,700;1,400;1,700&family=Lato:ital,wght@0,400;0,700;1,400;1,700&family=League+Spartan:wght@400;700&family=Libre+Baskerville:ital,wght@0,400;0,700;1,400&family=Lora:ital,wght@0,400;0,700;1,400;1,700&family=Merriweather:ital,wght@0,400;0,700;1,400;1,700&family=Montserrat:ital,wght@0,400;0,700;1,400;1,700&family=Nunito:ital,wght@0,400;0,700;1,400;1,700&family=Open+Sans:ital,wght@0,400;0,700;1,400;1,700&family=Oswald:wght@400;700&family=Playfair+Display:ital,wght@0,400;0,700;1,400;1,700&family=Poppins:ital,wght@0,400;0,700;1,400;1,700&family=Raleway:ital,wght@0,400;0,700;1,400;1,700&family=Roboto:ital,wght@0,400;0,700;1,400;1,700&family=Roboto+Condensed:ital,wght@0,400;0,700;1,400;1,700&family=Work+Sans:ital,wght@0,400;0,700;1,400;1,700&display=swap" rel="stylesheet">
 
       <style>
         body {
@@ -5137,11 +6041,18 @@ function printPriceTags() {
           font-family: Impact, Haettenschweiler, 'Arial Narrow Bold', sans-serif;
           margin-top: 18px;
           font-weight: bold;
+        
           display: flex;
           align-items: center;
           justify-content: center;
           text-align: center;
-          min-height: 1.6in;
+        
+          width: calc(100% - 0.55in);
+          height: 1.25in;
+          min-height: 1.25in;
+        
+          box-sizing: border-box;
+          overflow: hidden;
         }
 
         .price-preview-qr {
@@ -5155,12 +6066,15 @@ function printPriceTags() {
         .price-preview-preset-image {
           position: absolute;
           left: 14px;
-          bottom: 52px;
+        
+          /* Lift logo higher when slogan exists */
+          bottom: 72px;
+        
           width: 0.62in;
           height: 0.48in;
           object-fit: contain;
         }
-
+        
         .price-preview-preset-image.no-slogan {
           bottom: 16px;
           width: 1.15in;
@@ -5173,12 +6087,17 @@ function printPriceTags() {
           right: 1.05in;
           bottom: 12px;
           padding: 4px 8px;
-          font-family: Arial, sans-serif;
-          font-weight: bold;
+        
           display: flex;
           align-items: center;
           justify-content: center;
           text-align: center;
+        
+          box-sizing: border-box;
+        
+          -webkit-print-color-adjust: exact !important;
+          print-color-adjust: exact !important;
+          color-adjust: exact !important;
         }
 
         .price-preview-itemno {
@@ -5208,7 +6127,15 @@ function printPriceTags() {
   printWindow.document.write(html);
   printWindow.document.close();
 
-  printWindow.onload = function() {
+  printWindow.onload = async function() {
+    if (printWindow.document.fonts && printWindow.document.fonts.ready) {
+      try {
+        await printWindow.document.fonts.ready;
+      } catch (error) {
+        console.warn("Could not wait for print fonts.", error);
+      }
+    }
+
     printWindow.focus();
     printWindow.print();
   };
@@ -5239,19 +6166,19 @@ function generatePrintTagHTML() {
         </div>
 
         <div class="price-preview-info">
-          <div class="price-preview-name" style="font-size:${tag.nameFont}px;">
+          <div class="price-preview-name" style="${getPriceTagTypographyStyle(tag, "name")}">
             ${tag.productName || ""}
           </div>
 
-          <div class="price-preview-type" style="font-size:${tag.typeFont}px;">
+          <div class="price-preview-type" style="${getPriceTagTypographyStyle(tag, "type")}">
             ${tag.productType || ""}
           </div>
 
-          <div class="price-preview-size" style="font-size:${tag.sizeFont}px;">
+          <div class="price-preview-size" style="${getPriceTagTypographyStyle(tag, "size")}">
             ${tag.productSize || ""}
           </div>
 
-          <div class="price-preview-price" style="font-size:${tag.priceFont}px;">
+          <div class="price-preview-price" style="${getPriceTagTypographyStyle(tag, "price")}">
             $${Number(tag.price || 0).toFixed(2)}
           </div>
 
@@ -5273,12 +6200,22 @@ function generatePrintTagHTML() {
   
           ${
             tag.slogan
-              ? `<div class="price-preview-slogan"
+              ? `<div
+                    class="price-preview-slogan"
                     style="
-                      background:${tag.sloganBg};
-                      color:${tag.sloganColor};
-                      font-size:${tag.sloganFont}px;
-                    ">
+                      background-color:${tag.sloganBg} !important;
+                      color:${tag.sloganColor} !important;
+          
+                      box-shadow:
+                        inset 0 0 0 1000px ${tag.sloganBg};
+          
+                      -webkit-print-color-adjust:exact !important;
+                      print-color-adjust:exact !important;
+                      color-adjust:exact !important;
+          
+                      ${getPriceTagTypographyStyle(tag, "slogan")}
+                    "
+                  >
                     ${tag.slogan}
                  </div>`
               : ""
@@ -7508,35 +8445,150 @@ async function downloadWeeklyBuysExcelForEntries(entries, startDate, endDate) {
 
 async function uploadMagstarInventory() {
   const fileInput = document.getElementById("magstarInventoryFile");
-  const message = document.getElementById("magstarInventoryMessage");
+  const file = fileInput.files[0];
 
-  if (!fileInput.files.length) {
-    message.textContent = "Please select a Magstar XML file.";
+  if (!file) {
+    showMessage(
+      "magstarInventoryMessage",
+      "Please choose a Magstar inventory file first.",
+      "error"
+    );
     return;
   }
 
-  const file = fileInput.files[0];
-
-  if (!file.name.toLowerCase().endsWith(".xml")) {
-    message.textContent = "Please upload a .xml file.";
+  if (currentUser.role !== "Manager") {
+    showMessage(
+      "magstarInventoryMessage",
+      "Only managers can upload inventory.",
+      "error"
+    );
     return;
   }
 
   try {
-    message.textContent = "Reading Magstar inventory...";
+    showMessage(
+      "magstarInventoryMessage",
+      "Reading Magstar inventory file...",
+      ""
+    );
 
-    const xmlText = await file.text();
+    const data = await file.arrayBuffer();
 
-    const rows = parseMagstarInventoryXml(xmlText);
+    const workbook = XLSX.read(data, {
+      type: "array"
+    });
 
-    if (!rows.length) {
-      message.textContent =
-        "No inventory rows were found in the Magstar file.";
+    const worksheet = workbook.Sheets[workbook.SheetNames[0]];
+
+    /*
+     * Read the worksheet as a raw 2D array.
+     * Row 1 = report title
+     * Row 2 = headers
+     * Row 3+ = inventory
+     */
+    const sheetRows = XLSX.utils.sheet_to_json(
+      worksheet,
+      {
+        header: 1,
+        defval: ""
+      }
+    );
+
+    if (sheetRows.length < 3) {
+      showMessage(
+        "magstarInventoryMessage",
+        "The Magstar file does not contain inventory rows.",
+        "error"
+      );
       return;
     }
 
-    message.textContent =
-      `Uploading ${rows.length} inventory rows...`;
+    /*
+     * Validate row 2 headers.
+     */
+    const headers = sheetRows[1].map(value =>
+      String(value || "").trim()
+    );
+
+    const expectedHeaders = [
+      "Item Number",
+      "SKU/UPC",
+      "Description",
+      "Location",
+      "Zone/List Price",
+      "WAC",
+      "Qty On Hand",
+      "GPM%"
+    ];
+
+    const headersValid = expectedHeaders.every(
+      (header, index) =>
+        headers[index] === header
+    );
+
+    if (!headersValid) {
+      showMessage(
+        "magstarInventoryMessage",
+        "The uploaded file does not match the expected Magstar inventory format.",
+        "error"
+      );
+      return;
+    }
+
+    /*
+     * Data begins on Excel row 3.
+     */
+    const sourceRows = sheetRows.slice(2);
+
+    const rows = sourceRows
+      .filter(row => {
+        const sku = String(row[1] ?? "").trim();
+        const description = String(row[2] ?? "").trim();
+
+        return sku || description;
+      })
+      .map(row => {
+
+        /*
+         * Create Inventory A:K.
+         *
+         * Excel B -> Inventory B
+         * Excel C -> Inventory C
+         * Excel G -> Inventory F
+         * Excel F -> Inventory H
+         * Excel E -> Inventory I
+         * Excel H -> Inventory K
+         */
+
+        return [
+          "",             // A
+          row[1] ?? "",   // B - Item No. <- SKU/UPC
+          row[2] ?? "",   // C - Description
+          "",             // D
+          "",             // E
+          row[6] ?? "",   // F - Qty On Hand
+          "",             // G
+          row[5] ?? "",   // H - Avg Cost / WAC
+          row[4] ?? "",   // I - Base Price
+          "",             // J
+          row[7] ?? ""    // K - Gross M %
+        ];
+      });
+
+    if (!rows.length) {
+      showMessage(
+        "magstarInventoryMessage",
+        "No inventory rows were found in the Magstar file.",
+        "error"
+      );
+      return;
+    }
+
+    showMessage(
+      "magstarInventoryMessage",
+      `Uploading ${rows.length} inventory rows...`,
+      ""
+    );
 
     const response = await fetch(SCRIPT_URL, {
       method: "POST",
@@ -7549,138 +8601,346 @@ async function uploadMagstarInventory() {
     const result = await response.json();
 
     if (!result.success) {
-      message.textContent =
-        result.message || "Magstar inventory upload failed.";
+      showMessage(
+        "magstarInventoryMessage",
+        result.message || "Magstar inventory upload failed.",
+        "error"
+      );
+
       return;
     }
 
-    message.textContent =
-      `Magstar inventory uploaded successfully. ${rows.length} rows imported.`;
+    showMessage(
+      "magstarInventoryMessage",
+      `Magstar inventory uploaded successfully. ${rows.length} rows imported.`,
+      "success"
+    );
 
     fileInput.value = "";
+
+    /*
+     * Refresh app inventory after replacing it.
+     */
+    await loadInventory();
+
+    /* Final C2 Magstar step: upload B&H report. */
+    showMagstarBHModal();
 
   } catch (error) {
     console.error(error);
 
-    message.textContent =
-      "There was an error processing the Magstar inventory file.";
+    showMessage(
+      "magstarInventoryMessage",
+      "There was an error processing the Magstar inventory file.",
+      "error"
+    );
   }
 }
 
-function parseMagstarInventoryXml(xmlText) {
-  const parser = new DOMParser();
-  const xml = parser.parseFromString(xmlText, "application/xml");
+function showMagstarBHModal() {
+  const modal = document.getElementById("magstarBHModal");
+  const fileInput = document.getElementById("magstarBHFile");
+  const message = document.getElementById("magstarBHMessage");
+  const uploadBtn = document.getElementById("uploadMagstarBHBtn");
 
-  const parserError = xml.querySelector("parsererror");
-
-  if (parserError) {
-    throw new Error("Invalid XML file.");
+  if (fileInput) fileInput.value = "";
+  if (message) {
+    message.textContent = "";
+    message.className = "message";
+  }
+  if (uploadBtn) {
+    uploadBtn.disabled = false;
+    uploadBtn.textContent = "Upload B&H Report";
   }
 
-  const rowElements = Array.from(
-    xml.getElementsByTagNameNS("*", "Row")
-  );
+  modal.classList.add("show");
+  modal.setAttribute("aria-hidden", "false");
+}
 
-  const output = [];
+function closeMagstarBHModal() {
+  const modal = document.getElementById("magstarBHModal");
+  modal.classList.remove("show");
+  modal.setAttribute("aria-hidden", "true");
+}
 
-  /*
-   * Magstar data starts on Excel row 3,
-   * so skip rows 1 and 2.
-   */
-  rowElements.slice(2).forEach(rowElement => {
-    const cells = getMagstarXmlRowCells(rowElement);
+async function uploadMagstarBHReport() {
+  const fileInput = document.getElementById("magstarBHFile");
+  const message = document.getElementById("magstarBHMessage");
+  const uploadBtn = document.getElementById("uploadMagstarBHBtn");
+  const file = fileInput.files[0];
 
-    // Excel columns are zero-based here:
-    // B = 1
-    // C = 2
-    // H = 7
-    // P = 15
-    // Q = 16
+  if (!file) {
+    showMessage(
+      "magstarBHMessage",
+      "Please choose the Magstar B&H report first.",
+      "error"
+    );
+    return;
+  }
 
-    const itemNo = cells[2] ?? "";       // C
-    const description = cells[1] ?? "";  // B
-    const inventoryC = cells[16] ?? "";  // Q
-    const inventoryF = cells[7] ?? "";   // H
-    const inventoryG = cells[15] ?? "";  // P
-    const inventoryH = cells[8] ?? ""; // I
+  if (currentUser.role !== "Manager") {
+    showMessage(
+      "magstarBHMessage",
+      "Only managers can upload the Magstar B&H report.",
+      "error"
+    );
+    return;
+  }
 
-    /*
-     * Ignore completely empty rows.
-     */
-    if (
-      String(itemNo).trim() === "" &&
-      String(description).trim() === ""
-    ) {
+  uploadBtn.disabled = true;
+  uploadBtn.textContent = "Uploading...";
+
+  try {
+    showMessage(
+      "magstarBHMessage",
+      "Reading Magstar B&H report...",
+      ""
+    );
+
+    const data = await file.arrayBuffer();
+    const workbook = XLSX.read(data, { type: "array" });
+    const worksheet = workbook.Sheets[workbook.SheetNames[0]];
+
+    const sheetRows = XLSX.utils.sheet_to_json(
+      worksheet,
+      {
+        header: 1,
+        defval: ""
+      }
+    );
+
+    if (sheetRows.length < 3) {
+      showMessage(
+        "magstarBHMessage",
+        "The Magstar B&H report does not contain inventory rows.",
+        "error"
+      );
+      uploadBtn.disabled = false;
+      uploadBtn.textContent = "Upload B&H Report";
       return;
     }
 
-    /*
-     * Produce A:O for the Inventory sheet.
-     *
-     * A <- C
-     * B <- B
-     * C <- Q
-     * F <- H
-     * G <- P
-     */
-
-    output.push([
-      itemNo,        // A
-      description,   // B
-      inventoryC,    // C
-      "",            // D
-      "",            // E
-      inventoryF,    // F
-      inventoryG,    // G
-      inventoryH,    // H
-      "",            // I
-      "",            // J
-      "",            // K
-      "",            // L
-      "",            // M
-      "",            // N
-      ""             // O
-    ]);
-  });
-
-  return output;
-}
-
-function getMagstarXmlRowCells(rowElement) {
-  const cells = Array.from(rowElement.children).filter(
-    element => element.localName === "Cell"
-  );
-
-  const values = [];
-  let columnIndex = 0;
-
-  cells.forEach(cell => {
-    /*
-     * Excel XML may omit blank cells and instead use
-     * ss:Index="5", etc.
-     */
-    const indexAttribute =
-      cell.getAttribute("ss:Index") ||
-      cell.getAttributeNS(
-        "urn:schemas-microsoft-com:office:spreadsheet",
-        "Index"
-      );
-
-    if (indexAttribute) {
-      columnIndex = Number(indexAttribute) - 1;
-    }
-
-    const dataElement = Array.from(cell.children).find(
-      child => child.localName === "Data"
+    const headers = sheetRows[1].map(value =>
+      String(value ?? "").trim()
     );
 
-    values[columnIndex] =
-      dataElement ? dataElement.textContent : "";
+    const expectedHeaders = [
+      "Item Number",
+      "SKU/UPC",
+      "Description",
+      "Location",
+      "Zone/List Price",
+      "WAC",
+      "Qty On Hand",
+      "GPM%"
+    ];
 
-    columnIndex++;
-  });
+    const headersValid = expectedHeaders.every(
+      (header, index) => headers[index] === header
+    );
 
-  return values;
+    if (!headersValid) {
+      showMessage(
+        "magstarBHMessage",
+        "The uploaded file does not match the expected Magstar B&H report format.",
+        "error"
+      );
+      uploadBtn.disabled = false;
+      uploadBtn.textContent = "Upload B&H Report";
+      return;
+    }
+
+    const rows = sheetRows
+      .slice(2)
+      .filter(row => {
+        const itemNumber = String(row[0] ?? "").trim();
+        const skuUpc = String(row[1] ?? "").trim();
+        return itemNumber || skuUpc;
+      })
+      .map(row => ({
+        itemNumber: row[0] ?? "",
+        skuUpc: row[1] ?? "",
+        qtyOnHand: row[6] ?? 0
+      }));
+
+    if (!rows.length) {
+      showMessage(
+        "magstarBHMessage",
+        "No item rows were found in the Magstar B&H report.",
+        "error"
+      );
+      uploadBtn.disabled = false;
+      uploadBtn.textContent = "Upload B&H Report";
+      return;
+    }
+
+    showMessage(
+      "magstarBHMessage",
+      `Matching ${rows.length} B&H item rows to Inventory...`,
+      ""
+    );
+
+    const response = await fetch(SCRIPT_URL, {
+      method: "POST",
+      body: JSON.stringify({
+        action: "updateMagstarBHQtyOnPO",
+        rows
+      })
+    });
+
+    const result = await response.json();
+
+    if (!result.success) {
+      showMessage(
+        "magstarBHMessage",
+        result.message || "Could not update Qty On PO from the B&H report.",
+        "error"
+      );
+      uploadBtn.disabled = false;
+      uploadBtn.textContent = "Upload B&H Report";
+      return;
+    }
+
+    await loadInventory();
+
+    closeMagstarBHModal();
+
+    showMessage(
+      "magstarInventoryMessage",
+      result.message || "Magstar B&H report applied successfully.",
+      "success"
+    );
+
+  } catch (error) {
+    console.error(error);
+
+    showMessage(
+      "magstarBHMessage",
+      "There was an error processing the Magstar B&H report.",
+      "error"
+    );
+
+    uploadBtn.disabled = false;
+    uploadBtn.textContent = "Upload B&H Report";
+  }
+}
+
+async function downloadExistingInventoryOnly() {
+  try {
+    showMessage(
+      "inventoryReportMessage",
+      "Preparing existing inventory Excel file...",
+      ""
+    );
+
+    const response = await fetch(
+      `${SCRIPT_URL}?action=getExistingInventoryOnly`
+    );
+
+    const result = await response.json();
+
+    if (!result.success) {
+      showMessage(
+        "inventoryReportMessage",
+        result.message || "Could not retrieve existing inventory.",
+        "error"
+      );
+      return;
+    }
+
+    const rows = Array.isArray(result.rows)
+      ? result.rows
+      : [];
+
+    if (rows.length <= 1) {
+      showMessage(
+        "inventoryReportMessage",
+        "No existing inventory rows were found.",
+        "error"
+      );
+      return;
+    }
+
+    const workbook = new ExcelJS.Workbook();
+    const worksheet = workbook.addWorksheet("Existing Inventory");
+
+    rows.forEach(row => {
+      const cleanedRow = row.map(value => {
+        if (value === "" || value === null || value === undefined) {
+          return null;
+        }
+    
+        return value;
+      });
+    
+      worksheet.addRow(cleanedRow);
+    });
+
+    const headerRow = worksheet.getRow(1);
+    headerRow.font = { bold: true };
+    headerRow.fill = {
+      type: "pattern",
+      pattern: "solid",
+      fgColor: { argb: "FFF4F6F8" }
+    };
+
+    worksheet.columns.forEach((column, index) => {
+      if (index === 1) {
+        column.width = 34;
+      } else if (index === 8 || index === 9) {
+        column.width = 28;
+      } else {
+        column.width = 16;
+      }
+    });
+
+    worksheet.views = [
+      { state: "frozen", ySplit: 1 }
+    ];
+
+    const buffer = await workbook.xlsx.writeBuffer();
+
+    const blob = new Blob(
+      [buffer],
+      {
+        type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+      }
+    );
+
+    const link = document.createElement("a");
+    link.href = URL.createObjectURL(blob);
+    const today = new Date();
+    
+    const formattedDate = [
+      String(today.getMonth() + 1).padStart(2, "0"),
+      String(today.getDate()).padStart(2, "0"),
+      today.getFullYear()
+    ].join("-");
+    
+    link.download =
+      `Inventory Report with Vendors_${formattedDate}.xlsx`;
+
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+
+    URL.revokeObjectURL(link.href);
+
+    showMessage(
+      "inventoryReportMessage",
+      `Existing inventory downloaded successfully. ${rows.length - 1} item row(s) exported.`,
+      "success"
+    );
+
+  } catch (error) {
+    console.error(error);
+
+    showMessage(
+      "inventoryReportMessage",
+      "Could not download existing inventory.",
+      "error"
+    );
+  }
 }
 
 function openWeeklyBuyDownloadMenu() {
@@ -7831,4 +9091,3 @@ function normalizeBarcode(value) {
 </script>
 </body>
 </html>
-
