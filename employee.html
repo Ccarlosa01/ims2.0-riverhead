@@ -2279,7 +2279,7 @@
 
   <div id="tastings" class="tab-section">
     <div class="card">
-      <h2>Book Tasting</h2>
+      <h2 id="tastingFormTitle">Book Tasting</h2>
   
       <div class="row">
         <div>
@@ -2303,7 +2303,18 @@
       </div>
   
       <label>Product(s)</label>
-      <input id="tastingProducts" placeholder="Example: Jim Beam, Maker's Mark, Hornitos" />
+      <div class="tasting-product-search-wrap">
+        <input
+          id="tastingProductSearch"
+          placeholder="Search by Item No. or Description..."
+          autocomplete="off"
+          oninput="showTastingProductSuggestions(this.value)"
+          onfocus="showTastingProductSuggestions(this.value)"
+          onkeydown="handleTastingProductSearchKeydown(event)"
+        />
+        <div id="tastingProductSuggestions" class="tasting-product-suggestions"></div>
+      </div>
+      <div id="tastingSelectedProducts" class="tasting-selected-products"></div>
       
       <label>Notes</label>
       <input id="tastingNotes" placeholder="Optional notes..." />
@@ -2311,7 +2322,18 @@
       <label>Image URL (Optional)</label>
       <input id="tastingImageUrl" placeholder="Include a Branded Image for Store Tasting Calendar" />
       
-      <button class="primary" onclick="saveTasting()">Book Tasting</button>
+      <button id="saveTastingBtn" class="primary" onclick="saveTasting()">
+        Book Tasting
+      </button>
+
+      <button
+        id="cancelTastingEditBtn"
+        class="secondary"
+        onclick="cancelEditTasting()"
+        style="display:none;"
+      >
+        Cancel Edit
+      </button>
   
       <div id="tastingMessage" class="message"></div>
     </div>
@@ -2373,24 +2395,45 @@
   </div>
 
 
-  <div id="magstarBHModal" class="magstar-bh-modal" aria-hidden="true">
-    <div class="magstar-bh-dialog" role="dialog" aria-modal="true" aria-labelledby="magstarBHModalTitle">
-      <h2 id="magstarBHModalTitle">Upload Magstar B&amp;H Report</h2>
-      <p class="muted">
-        Final Magstar step: upload the B&amp;H report. Its Qty On Hand will update Inventory Qty On PO.
-        Inventory items not found in this report will be set to 0 Qty On PO.
-      </p>
+  <div id="vendorDatabaseModal" class="vendor-db-modal" aria-hidden="true">
+    <div class="vendor-db-dialog" role="dialog" aria-modal="true" aria-labelledby="vendorDatabaseModalTitle">
+      <h2 id="vendorDatabaseModalTitle">Vendor Information Needed</h2>
+      <div id="vendorDatabaseProgress" class="vendor-db-progress"></div>
 
-      <input type="file" id="magstarBHFile" accept=".xlsx,.xls,.xml" />
-
-      <div class="magstar-bh-actions">
-        <button type="button" class="secondary" onclick="closeMagstarBHModal()">Cancel</button>
-        <button type="button" class="primary" id="uploadMagstarBHBtn" onclick="uploadMagstarBHReport()">
-          Upload B&amp;H Report
-        </button>
+      <div class="vendor-db-product">
+        <strong id="vendorDatabaseItem"></strong>
+        <div id="vendorDatabaseDescription"></div>
+        <div id="vendorDatabaseQty" class="muted" style="margin-top:6px;"></div>
       </div>
 
-      <div id="magstarBHMessage" class="message"></div>
+      <label for="vendorDatabaseVendorSelect">Vendor</label>
+      <select id="vendorDatabaseVendorSelect" onchange="handleVendorDatabaseSelectChange('vendor')"></select>
+      <input
+        id="vendorDatabaseNewVendor"
+        class="vendor-db-new-input"
+        placeholder="Enter new vendor"
+      />
+
+      <label for="vendorDatabaseSalesRepSelect">Sales Rep</label>
+      <select id="vendorDatabaseSalesRepSelect" onchange="handleVendorDatabaseSelectChange('salesRep')"></select>
+      <input
+        id="vendorDatabaseNewSalesRep"
+        class="vendor-db-new-input"
+        placeholder="Enter new sales rep"
+      />
+
+      <div id="vendorDatabaseError" class="vendor-db-error"></div>
+
+      <div class="vendor-db-actions">
+        <button
+          type="button"
+          class="primary"
+          id="saveVendorDatabaseBtn"
+          onclick="saveCurrentVendorDatabaseAssignment()"
+        >
+          Save & Continue
+        </button>
+      </div>
     </div>
   </div>
 
@@ -2401,7 +2444,7 @@
 <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
 
 <script>
-const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxHfJaIMNmwXl-QBfulyHb3JhLcC8wPKeaRtWKsl3O3z5U8L4QLnLU2fpRzPPOma8K_/exec";
+const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwL9X1VhxBlc8k0gFPQAJ60FR1r7vImYn1yJ8aKXheC4h6ICsYuWLlpzRT0JVzzOoEZ/exec";
 
 let currentUser = null;
 let inventory = [];
@@ -2489,6 +2532,8 @@ function getPriceTagFontStack(fontName) {
 }
 let tastingsData = [];
 let tastingViewMode = "list";
+let editingTastingRowNumber = null;
+let selectedTastingProducts = [];
 let recountItems = [];
 let selectedRecountItem = null;
 let recountReportData = [];
@@ -6258,27 +6303,211 @@ function setupTastingMonthYear() {
   yearInput.value = today.getFullYear();
 }
 
+function parseTastingProducts(value) {
+  const raw = String(value || "").trim();
+  if (!raw) return [];
+
+  if (raw.includes("||")) {
+    return raw.split("||").map(item => item.trim()).filter(Boolean);
+  }
+
+  if (raw.includes("\n")) {
+    return raw.split(/\r?\n/).map(item => item.trim()).filter(Boolean);
+  }
+
+  // Backward compatibility for older tastings that were saved as comma-separated text.
+  if (raw.includes(",")) {
+    return raw.split(",").map(item => item.trim()).filter(Boolean);
+  }
+
+  return [raw];
+}
+
+function getTastingProductLabel(item) {
+  const itemNo = String(item?.itemNo || "").trim();
+  const description = String(item?.description || "").trim();
+
+  if (itemNo && description) return `${itemNo} - ${description}`;
+  return description || itemNo;
+}
+
+function showTastingProductSuggestions(query = "") {
+  const box = document.getElementById("tastingProductSuggestions");
+  if (!box) return;
+
+  const search = String(query || "").trim().toLowerCase();
+  const selectedLabels = new Set(
+    selectedTastingProducts.map(item => String(item.label || "").toLowerCase())
+  );
+
+  const matches = inventory
+    .map((item, index) => ({ item, index, label: getTastingProductLabel(item) }))
+    .filter(entry => {
+      if (!entry.label || selectedLabels.has(entry.label.toLowerCase())) return false;
+      if (!search) return true;
+
+      const itemNo = String(entry.item.itemNo || "").toLowerCase();
+      const description = String(entry.item.description || "").toLowerCase();
+      return itemNo.includes(search) || description.includes(search);
+    })
+    .slice(0, 30);
+
+  if (!matches.length) {
+    box.innerHTML = `<div style="padding:10px 12px;color:#666;">No inventory matches found.</div>`;
+    box.style.display = "block";
+    return;
+  }
+
+  box.innerHTML = matches.map(entry => `
+    <button
+      type="button"
+      class="tasting-product-suggestion"
+      onclick="selectTastingProductByIndex(${entry.index})"
+    >
+      ${escapeHtml(entry.label)}
+    </button>
+  `).join("");
+
+  box.style.display = "block";
+}
+
+function hideTastingProductSuggestions() {
+  const box = document.getElementById("tastingProductSuggestions");
+  if (box) box.style.display = "none";
+}
+
+function handleTastingProductSearchKeydown(event) {
+  if (event.key === "Escape") {
+    hideTastingProductSuggestions();
+    event.currentTarget.blur();
+  }
+}
+
+function selectTastingProductByIndex(index) {
+  const item = inventory[index];
+  if (!item) return;
+
+  const label = getTastingProductLabel(item);
+  if (!label) return;
+
+  const exists = selectedTastingProducts.some(
+    selected => String(selected.label || "").toLowerCase() === label.toLowerCase()
+  );
+
+  if (!exists) {
+    selectedTastingProducts.push({
+      itemNo: String(item.itemNo || "").trim(),
+      description: String(item.description || "").trim(),
+      label
+    });
+  }
+
+  const search = document.getElementById("tastingProductSearch");
+  if (search) {
+    search.value = "";
+    search.focus();
+  }
+
+  hideTastingProductSuggestions();
+  renderSelectedTastingProducts();
+}
+
+function removeTastingProduct(index) {
+  selectedTastingProducts.splice(index, 1);
+  renderSelectedTastingProducts();
+}
+
+function renderSelectedTastingProducts() {
+  const container = document.getElementById("tastingSelectedProducts");
+  if (!container) return;
+
+  if (!selectedTastingProducts.length) {
+    container.innerHTML = "";
+    return;
+  }
+
+  container.innerHTML = selectedTastingProducts.map((item, index) => `
+    <div class="tasting-selected-product">
+      <span>${escapeHtml(item.label || "")}</span>
+      <button
+        type="button"
+        title="Remove product"
+        aria-label="Remove ${escapeHtml(item.label || "product")}"
+        onclick="removeTastingProduct(${index})"
+      >×</button>
+    </div>
+  `).join("");
+}
+
+function clearTastingProductSelection() {
+  selectedTastingProducts = [];
+
+  const search = document.getElementById("tastingProductSearch");
+  if (search) search.value = "";
+
+  hideTastingProductSuggestions();
+  renderSelectedTastingProducts();
+}
+
+function formatTastingProductsAsList(value, compact = false) {
+  const products = parseTastingProducts(value);
+  if (!products.length) return "";
+
+  const className = compact
+    ? "tasting-product-bullets compact"
+    : "tasting-product-bullets";
+
+  return `
+    <ul class="${className}">
+      ${products.map(product => `<li>${escapeHtml(product)}</li>`).join("")}
+    </ul>
+  `;
+}
+
+function getTastingProductsPlainText(value) {
+  return parseTastingProducts(value).join(", ");
+}
+
+document.addEventListener("click", event => {
+  const wrap = event.target.closest?.(".tasting-product-search-wrap");
+  if (!wrap) hideTastingProductSuggestions();
+});
+
 async function saveTasting() {
   const dateReserved = document.getElementById("tastingDate").value;
   const timeFrom = document.getElementById("tastingTimeFrom").value;
   const timeTo = document.getElementById("tastingTimeTo").value;
   const timeSlot = `${timeFrom} - ${timeTo}`;
-  const products = document.getElementById("tastingProducts").value.trim();
+  const products = selectedTastingProducts
+    .map(item => item.label)
+    .filter(Boolean)
+    .join("||");
   const notes = document.getElementById("tastingNotes").value.trim();
   const imageUrl = document.getElementById("tastingImageUrl").value.trim();
 
   if (!dateReserved || !timeFrom || !timeTo || !products) {
-    showMessage("tastingMessage", "Date Reserved, Time Slot, and Product(s) are required.", "error");
+    showMessage(
+      "tastingMessage",
+      "Date Reserved, Time Slot, and Product(s) are required.",
+      "error"
+    );
     return;
   }
 
+  const isEditing = editingTastingRowNumber !== null;
+
   try {
-    showMessage("tastingMessage", "Booking tasting...", "");
+    showMessage(
+      "tastingMessage",
+      isEditing ? "Updating tasting..." : "Booking tasting...",
+      ""
+    );
 
     const response = await fetch(SCRIPT_URL, {
       method: "POST",
       body: JSON.stringify({
-        action: "saveTasting",
+        action: isEditing ? "updateTasting" : "saveTasting",
+        rowNumber: editingTastingRowNumber,
         dateReserved,
         timeSlot,
         imageUrl,
@@ -6293,12 +6522,18 @@ async function saveTasting() {
     if (result.success) {
       showMessage("tastingMessage", result.message, "success");
 
+      editingTastingRowNumber = null;
+
       document.getElementById("tastingDate").value = "";
       document.getElementById("tastingTimeFrom").value = "";
       document.getElementById("tastingTimeTo").value = "";
-      document.getElementById("tastingProducts").value = "";
+      clearTastingProductSelection();
       document.getElementById("tastingNotes").value = "";
       document.getElementById("tastingImageUrl").value = "";
+
+      document.getElementById("tastingFormTitle").textContent = "Book Tasting";
+      document.getElementById("saveTastingBtn").textContent = "Book Tasting";
+      document.getElementById("cancelTastingEditBtn").style.display = "none";
 
       await loadTastings();
     } else {
@@ -6306,8 +6541,70 @@ async function saveTasting() {
     }
 
   } catch {
-    showMessage("tastingMessage", "Could not book tasting.", "error");
+    showMessage(
+      "tastingMessage",
+      isEditing ? "Could not update tasting." : "Could not book tasting.",
+      "error"
+    );
   }
+}
+
+function editTasting(rowNumber) {
+  const tasting = tastingsData.find(
+    item => Number(item.rowNumber) === Number(rowNumber)
+  );
+
+  if (!tasting) {
+    showMessage("tastingMessage", "Could not find this tasting.", "error");
+    return;
+  }
+
+  editingTastingRowNumber = Number(rowNumber);
+
+  document.getElementById("tastingDate").value =
+    normalizeDateKey(tasting.dateReserved);
+
+  const timeParts = String(tasting.timeSlot || "").split(" - ");
+
+  document.getElementById("tastingTimeFrom").value = timeParts[0] || "";
+  document.getElementById("tastingTimeTo").value = timeParts[1] || "";
+
+  selectedTastingProducts = parseTastingProducts(tasting.products).map(label => ({
+    label
+  }));
+  renderSelectedTastingProducts();
+  document.getElementById("tastingProductSearch").value = "";
+  hideTastingProductSuggestions();
+  document.getElementById("tastingNotes").value = tasting.notes || "";
+  document.getElementById("tastingImageUrl").value = tasting.imageUrl || "";
+
+  document.getElementById("tastingFormTitle").textContent = "Edit Tasting";
+  document.getElementById("saveTastingBtn").textContent = "Save Changes";
+  document.getElementById("cancelTastingEditBtn").style.display = "inline-block";
+
+  showMessage("tastingMessage", "Editing selected tasting.", "");
+
+  document.getElementById("tastingFormTitle").scrollIntoView({
+    behavior: "smooth",
+    block: "start"
+  });
+}
+
+function cancelEditTasting() {
+  editingTastingRowNumber = null;
+
+  document.getElementById("tastingDate").value = "";
+  document.getElementById("tastingTimeFrom").value = "";
+  document.getElementById("tastingTimeTo").value = "";
+  clearTastingProductSelection();
+  document.getElementById("tastingNotes").value = "";
+  document.getElementById("tastingImageUrl").value = "";
+
+  document.getElementById("tastingFormTitle").textContent = "Book Tasting";
+  document.getElementById("saveTastingBtn").textContent = "Book Tasting";
+  document.getElementById("cancelTastingEditBtn").style.display = "none";
+
+  showMessage("tastingMessage", "", "");
 }
 
 async function loadTastings() {
@@ -6366,7 +6663,7 @@ function renderTastingList() {
   tbody.innerHTML = "";
 
   if (!filtered.length) {
-    tbody.innerHTML = `<tr><td colspan="5">No tastings found for this month.</td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="6">No tastings found for this month.</td></tr>`;
     return;
   }
 
@@ -6378,10 +6675,14 @@ function renderTastingList() {
       tr.innerHTML = `
         <td>${formatDateOnly(tasting.dateReserved)}</td>
         <td>${tasting.timeSlot || ""}</td>
-        <td>${tasting.products || ""}</td>
+        <td>${formatTastingProductsAsList(tasting.products)}</td>
         <td>${tasting.notes || ""}</td>
         <td>${tasting.createdBy || ""}</td>
         <td>
+          <button class="secondary" onclick="editTasting(${tasting.rowNumber})">
+            Edit
+          </button>
+
           <button class="danger" onclick="deleteTasting(${tasting.rowNumber})">
             Delete
           </button>
@@ -6439,7 +6740,7 @@ function renderTastingCalendar() {
       eventDiv.className = "tasting-event";
       eventDiv.innerHTML = `
         <strong>${event.timeSlot || ""}</strong><br>
-        ${event.products || ""}
+        ${formatTastingProductsAsList(event.products, true)}
       `;
       cell.appendChild(eventDiv);
     });
@@ -6542,7 +6843,8 @@ function buildGoogleCalendarLink(tasting) {
   const startDate = formatGoogleCalendarDate(dateKey, start);
   const endDate = formatGoogleCalendarDate(dateKey, end);
 
-  const title = `${tasting.products || "Tasting"} Tasting`;
+  const productTitle = getTastingProductsPlainText(tasting.products) || "Tasting";
+  const title = `${productTitle} Tasting`;
   const details = tasting.notes || "";
 
   return "https://calendar.google.com/calendar/render?action=TEMPLATE" +
@@ -6559,7 +6861,7 @@ function buildICSLink(tasting) {
 
   return SCRIPT_URL +
     `?action=downloadICS` +
-    `&title=${encodeURIComponent((tasting.products || "Tasting") + " Tasting")}` +
+    `&title=${encodeURIComponent((getTastingProductsPlainText(tasting.products) || "Tasting") + " Tasting")}` +
     `&date=${encodeURIComponent(dateKey)}` +
     `&start=${encodeURIComponent(start || "")}` +
     `&end=${encodeURIComponent(end || "")}` +
@@ -6653,7 +6955,7 @@ async function downloadMonthlyTastingPDF() {
 
       pdf.setFont("helvetica", "bold");
       pdf.setFontSize(13);
-      pdf.text(tasting.products || "Tasting", margin + 18, y);
+      pdf.text(getTastingProductsPlainText(tasting.products) || "Tasting", margin + 18, y);
 
       y += 17;
 
@@ -6730,7 +7032,7 @@ function downloadTastingsCSV() {
     const endTime = parts[1] || "";
 
     rows.push([
-      tasting.products || "",
+      getTastingProductsPlainText(tasting.products),
       convertToCSVDate(tasting.dateReserved, startTime),
       convertToCSVDate(tasting.dateReserved, endTime),
       tasting.imageUrl || ""
