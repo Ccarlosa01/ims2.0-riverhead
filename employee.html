@@ -2437,6 +2437,50 @@
     </div>
   </div>
 
+
+  <div
+    id="magstarBHModal"
+    class="magstar-bh-modal"
+    aria-hidden="true"
+  >
+    <div class="magstar-bh-dialog">
+      <h2>Upload Magstar B&amp;H Report</h2>
+
+      <p class="muted">
+        Final Magstar step: upload the B&amp;H report. Its Qty On Hand will update
+        Inventory Qty On PO. Inventory items not found in this report will be set
+        to 0 Qty On PO.
+      </p>
+
+      <input
+        type="file"
+        id="magstarBHFile"
+        accept=".xlsx,.xls,.xml"
+      />
+
+      <div class="magstar-bh-actions">
+        <button
+          type="button"
+          class="secondary"
+          onclick="closeMagstarBHModal()"
+        >
+          Cancel
+        </button>
+
+        <button
+          type="button"
+          id="uploadMagstarBHBtn"
+          class="primary"
+          onclick="uploadMagstarBHReport()"
+        >
+          Upload B&amp;H Report
+        </button>
+      </div>
+
+      <div id="magstarBHMessage" class="message"></div>
+    </div>
+  </div>
+
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 <script src="https://unpkg.com/@zxing/library@latest"></script>
 <script src="https://cdn.jsdelivr.net/npm/exceljs/dist/exceljs.min.js"></script>
@@ -9107,11 +9151,17 @@ function showMagstarBHModal() {
   const message = document.getElementById("magstarBHMessage");
   const uploadBtn = document.getElementById("uploadMagstarBHBtn");
 
+  if (!modal) {
+    throw new Error("Magstar B&H upload window is missing from employee.html.");
+  }
+
   if (fileInput) fileInput.value = "";
+
   if (message) {
     message.textContent = "";
     message.className = "message";
   }
+
   if (uploadBtn) {
     uploadBtn.disabled = false;
     uploadBtn.textContent = "Upload B&H Report";
@@ -9123,6 +9173,9 @@ function showMagstarBHModal() {
 
 function closeMagstarBHModal() {
   const modal = document.getElementById("magstarBHModal");
+
+  if (!modal) return;
+
   modal.classList.remove("show");
   modal.setAttribute("aria-hidden", "true");
 }
